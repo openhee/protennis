@@ -44,7 +44,9 @@ const html=fs.readFileSync(`${__dirname}/dist/coach.html`,'utf8');
 for(const [,id] of html.matchAll(/id="([^"]+)"/g))nodes['#'+id]=new Node();
 const storage={};
 const ui={window:context.window,document:{querySelector:s=>{assert.ok(nodes[s],`Missing DOM node ${s}`);return nodes[s]},createElement:()=>new Node(),createTextNode:text=>({textContent:text})},localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v},setTimeout:()=>1,clearTimeout:()=>{}};
-vm.createContext(ui);vm.runInContext(code,ui);
+vm.createContext(ui);
+vm.runInContext(fs.readFileSync(`${__dirname}/public/date.js`,'utf8'),ui);
+vm.runInContext(code,ui);
 vm.runInContext("edit(1,'7:40')",ui);
 assert.equal(nodes['#student-name'].value,data['이광한|1|7:40'].name);
 assert.equal(nodes['#session'].value,3);
@@ -60,3 +62,10 @@ nodes['#reset-confirm'].onclick();
 assert.equal(vm.runInContext("data[key('이광한',1,'7:40')].attendance",ui),'scheduled');
 assert.ok(Object.keys(storage).length);
 console.log('PASS: UI initialization, coach switching, source details, attendance independent of planned session, browser storage and reset handlers.');
+for(const [date,column] of [['2026-11-11',3],['2026-11-12',4],['2026-11-16',-1],['2027-11-12',-1]]){
+ ui.window.RallyDate.key=()=>date;
+ vm.runInContext('render()',ui);
+ const headers=nodes['#timetable'].children[0].children[0].children;
+ assert.deepEqual(headers.flatMap((node,i)=>node.className==='today-head'?[i]:[]),column<0?[]:[column]);
+}
+console.log('PASS: today column moves to Thursday on Nov 12; no highlight outside the demo week/year.');

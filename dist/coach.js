@@ -28,8 +28,10 @@ function notify(message){$('#toast').textContent=message;$('#toast').hidden=fals
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));$('#save-status').textContent='이 브라우저에 저장됨 · 실제 예약 및 알림 없음';return true}catch{$('#save-status').textContent='저장 공간 사용 불가 · 새로고침 시 변경이 사라집니다';return false}}
 function element(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el}
 function render(){
+ const today=window.RallyDate.key();
+ $('#current-date').textContent=`오늘 ${window.RallyDate.label()} · 한국 시간${today<'2026-11-09'||today>'2026-11-15'?' · 현재 표는 11월 2주차 시연입니다.':''}`;
  const table=$('#timetable');table.replaceChildren();const head=element('thead'),hr=element('tr');hr.append(element('th','','시간'));
- DAYS.forEach((name,i)=>{const th=element('th',i===2?'today-head':'',name);th.scope='col';th.append(element('strong','',String(9+i)));hr.append(th)});head.append(hr);table.append(head);const body=element('tbody');
+ DAYS.forEach((name,i)=>{const isToday=today===`2026-11-${String(9+i).padStart(2,'0')}`;const th=element('th',isToday?'today-head':'',name);th.scope='col';if(isToday)th.setAttribute('aria-current','date');th.append(element('strong','',String(9+i)));hr.append(th)});head.append(hr);table.append(head);const body=element('tbody');
  TIMES.forEach(time=>{const row=element('tr');row.append(element('td','',time));DAYS.forEach((day,i)=>{const td=element('td'),id=key(coach,i,time),slot=data[id];const b=element('button',`slot ${slot.kind} ${slot.kind==='lesson'?slot.attendance:''}`);b.type='button';
  if(slot.kind==='lesson'){b.append(element('span','slot-name',slot.name),element('span','session',`${slot.session}/${slot.total}`),element('small','',slot.attendance==='attended'?'✓ 출석 완료':slot.attendance==='absent'?'불참':'20분 · 레슨 예정'));}
  else if(slot.kind==='record'){b.append(element('span','slot-name',slot.raw),element('small','','원문 확인 필요'));}
@@ -48,3 +50,4 @@ for(const id of ['close','cancel'])$('#'+id).onclick=()=>$('#editor').close();
 $('#coach-select').onchange=e=>{coach=e.target.value;render()};
 $('#reset').onclick=()=>$('#reset-dialog').showModal();$('#reset-cancel').onclick=()=>$('#reset-dialog').close();$('#reset-confirm').onclick=()=>{data=initialSchedule();save();render();$('#reset-dialog').close();notify('읽어온 11월 2주차 기록으로 초기화했습니다.')};
 render();
+window.RallyDate.watch(render);

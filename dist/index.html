@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>랠리 — 나의 테니스 루틴</title>
+    <script src="/date.js"></script>
     <style>
       :root {
         --green: #214e3b;
@@ -700,7 +701,7 @@
           <p id="subtitle">시간 걱정 없이, 테니스에만 집중하세요.</p>
         </div>
         <div class="today">
-          2026년 11월 11일 수요일　<span class="demo">화면 미리보기</span>
+          <span id="today-label"></span>　<span class="demo">11월 2주차 시연</span>
         </div>
       </div>
       <section id="student" class="layout">
@@ -709,7 +710,7 @@
             <div class="court" aria-hidden="true"></div>
             <div class="tennis-ball" aria-hidden="true"></div>
             <div class="hero-content">
-              <span class="pill">●　다음 레슨 · D-1</span>
+              <span class="pill">●　시연 레슨</span>
               <h2 id="next-date">11월 12일 <small>목요일</small></h2>
               <div class="hero-details" id="next-details">
                 오후 7:00 – 7:20　·　김민준 코치
@@ -866,7 +867,7 @@
       function renderDates() {
         $("#dates").innerHTML = Array.from({ length: 7 }, (_, i) => {
           let d = 9 + i;
-          return `<button class="date ${selectedDay === d ? "active" : ""}" ${d < 11 ? "disabled" : ""} aria-pressed="${selectedDay === d}" data-day="${d}"><span>${days[i]}</span><strong>${d}</strong><i></i></button>`;
+          return `<button class="date ${selectedDay === d ? "active" : ""}" ${`2026-11-${String(d).padStart(2,'0')}` < window.RallyDate.key() ? "disabled" : ""} aria-pressed="${selectedDay === d}" data-day="${d}"><span>${days[i]}</span><strong>${d}</strong><i></i></button>`;
         }).join("");
         document.querySelectorAll("[data-day]").forEach(
           (b) =>
@@ -884,6 +885,7 @@
         $("#slots").innerHTML = times
           .map((t, i) => {
             let unavailable =
+              `2026-11-${String(selectedDay).padStart(2,'0')}` < window.RallyDate.key() ||
               (i + selectedDay) % 5 === 0 ||
               (booking.day === selectedDay && booking.time === t);
             return `<button class="slot ${t === selectedTime ? "selected" : ""}" ${unavailable ? "disabled" : ""} aria-pressed="${t === selectedTime}" data-time="${t}" aria-label="${t}${unavailable ? " 예약 마감" : ""}">${t}</button>`;
@@ -968,7 +970,7 @@
             $("#next-details").textContent =
               `${time} – ${time.split(":")[0]}:${String(+time.split(":")[1] + 20).padStart(2, "0")} · 김민준 코치`;
             $(".hero .pill").textContent =
-              `●　예약 확정 · ${day === 11 ? "오늘" : "D-" + (day - 11)}`;
+              `●　시연 예약 · ${window.RallyDate.countdown(`2026-11-${String(day).padStart(2,'0')}`)}`;
             changing = false;
             selectedTime = null;
             renderSlots();
@@ -1011,13 +1013,22 @@
         $("#eyebrow").textContent = "COACH’S DAILY PLAN";
         $("#title").textContent = "민준 코치님, 오늘의 코트예요.";
         $("#subtitle").textContent =
-          "11월 11일 수요일 · 오늘의 레슨과 출석을 한눈에 확인하세요.";
+          "11월 2주차 시연 · 레슨과 출석을 한눈에 확인하세요.";
         document
           .querySelectorAll("nav button")
           .forEach((b) => b.classList.remove("active"));
       };
       renderDates();
       renderSlots();
+      function refreshToday() {
+        if (`2026-11-${String(selectedDay).padStart(2,'0')}` < window.RallyDate.key()) selectedTime = null;
+        $("#today-label").textContent = window.RallyDate.label();
+        $(".hero .pill").textContent = `●　시연 레슨 · ${window.RallyDate.countdown(`2026-11-${String(booking.day).padStart(2,'0')}`)}`;
+        renderDates();
+        renderSlots();
+      }
+      refreshToday();
+      window.RallyDate.watch(refreshToday);
       // Dedicated weekly coach demo. Student prototype remains available here.
       $("#role").onclick = () => { window.location.href = "coach.html"; };
     </script>
