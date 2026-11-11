@@ -1,0 +1,6 @@
+.openai/
+outputs/
+node_modules/
+dist/coach-data.js
+update-coach-source.cjs
+*.zip
