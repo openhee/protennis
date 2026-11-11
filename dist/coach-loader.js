@@ -1,5 +1,18 @@
 // Local source data is excluded from Git. Fall back to synthetic demo data.
-(function () {
+(async function () {
+  // The server protects this file and every coach asset. Session lookup also
+  // namespaces browser-only demo state for the signed-in account.
+  try {
+    const response = await fetch('/auth/session', { cache: 'no-store' });
+    if (!response.ok) { location.replace('/login.html'); return; }
+    const session = await response.json();
+    if (session.role !== 'coach') { location.replace(session.home); return; }
+    window.RALLY_ACCOUNT = session.storageId;
+    window.RALLY_COACH_NAME = session.name;
+  } catch {
+    document.querySelector('.source-note p').textContent = '로그인 상태를 확인하지 못했습니다. 연결을 확인하고 새로고침해 주세요.';
+    return;
+  }
   function load(src, success, failure) {
     const script = document.createElement('script');
     script.src = src;

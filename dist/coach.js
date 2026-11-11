@@ -1,5 +1,5 @@
 'use strict';
-const STORAGE_KEY='rally-coach-demo-2026-11-w2-source-v2'+(window.RALLY_SOURCE.synthetic?'-synthetic':'');
+const STORAGE_KEY='rally-coach-demo-2026-11-w2-source-v2'+(window.RALLY_SOURCE.synthetic?'-synthetic':'')+':'+(window.RALLY_ACCOUNT||'offline');
 const DAYS=['월','화','수','목','금','토','일'];
 const TIMES=Array.from({length:48},(_,i)=>`${6+Math.floor(i/3)}:${String(i%3*20).padStart(2,'0')}`);
 const COACHES=['이광한','신홍경','하초희','유주희','담당 미확인'];
@@ -21,7 +21,8 @@ function initialSchedule(){
  return data;
 }
 const $=s=>document.querySelector(s);
-let data=initialSchedule(),coach=COACHES[0],active=null,toastTimer;
+let data=initialSchedule(),coach=COACHES.includes(window.RALLY_COACH_NAME)?window.RALLY_COACH_NAME:COACHES[0],active=null,toastTimer;
+$('#coach-select').value=coach;
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&Object.keys(data).every(k=>saved[k]&&['unknown','open','blocked','lesson','record'].includes(saved[k].kind)))data=saved;}catch{}
 function notify(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,3300)}
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));$('#save-status').textContent='이 브라우저에 저장됨 · 실제 예약 및 알림 없음';return true}catch{$('#save-status').textContent='저장 공간 사용 불가 · 새로고침 시 변경이 사라집니다';return false}}

@@ -1,0 +1,12 @@
+{
+  "name": "protennis-rally",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local server.mjs",
+    "build": "node scripts/check-build.mjs",
+    "test": "node --test tests/auth.test.mjs && node verify-coach.cjs --sample",
+    "setup:auth": "node scripts/setup-auth.mjs"
+  },
+  "engines": { "node": "24.x" }
+}

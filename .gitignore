@@ -4,3 +4,6 @@ node_modules/
 dist/coach-data.js
 update-coach-source.cjs
 *.zip
+.env*
+!.env.example
+.vercel/
