@@ -35,7 +35,7 @@ Supabase Authentication → Users에서 사용자를 생성하고, 운영자가 
 
 ## 검증
 
-실제 계정의 Auth UUID 연결과 RLS 상태를 SQL 트랜잭션에서 조회해 확인했다. SDK를 그대로 사용하고 외부 HTTP 응답만 대체한 자동 테스트에서 정상 로그인, 다른 역할 접근 금지, 메타데이터/쿠키 위조 거부, 미등록/비활성 계정, DB 장애, 세션 갱신, 분할 쿠키, 로그아웃, CSRF를 검사한다. 실제 비밀번호를 이용한 최종 로그인은 사용자가 로컬 또는 배포된 화면에서 확인한다.
+실제 계정의 Auth UUID 연결과 RLS 상태를 SQL 트랜잭션에서 조회해 확인했다. SDK를 그대로 사용하고 외부 HTTP 응답만 대체한 자동 테스트에서 정상 로그인, 다른 역할 접근 금지, 메타데이터/쿠키 위조 거부, 미등록/비활성 계정, DB 장애, 세션 갱신, 분할 쿠키, 로그아웃, CSRF를 검사했다. 전체 테스트 14개와 일정 UI 검증 및 빌드가 통과했다. 사용자가 로컬 화면에서 실제 비밀번호로 로그인해 코치 화면이 열리는 것까지 확인했다. Vercel 배포 검증은 아직 진행하지 않았다.
 
 참고: [공식 서버 쿠키 연동](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [비밀번호 로그인](https://supabase.com/docs/reference/javascript/auth-signinwithpassword).
 
