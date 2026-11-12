@@ -8,5 +8,11 @@
     "test": "node --test tests/*.test.mjs && node verify-coach.cjs --sample",
     "setup:auth": "node scripts/setup-auth.mjs"
   },
-  "engines": { "node": "24.x" }
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0"
+  }
 }

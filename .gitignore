@@ -7,3 +7,5 @@ update-coach-source.cjs
 .env*
 !.env.example
 .vercel/
+supabase/.temp/
+supabase/.branches/

@@ -1,8 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { configuration, checkPassword, hashPassword, issueSession, readSession, cookie, homeFor } from '../lib/auth.mjs';
+import { createAuthContext, AuthUnavailable, homeFor } from '../lib/supabase-auth.mjs';
 const attempts = new Map();
-const dummyHash = hashPassword('not-a-real-account-password', '00000000000000000000000000000000');
 const types = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8' };
 const assets = new Set(['coach.css', 'coach.js', 'coach-loader.js', 'coach-data.sample.js']);
 const security = {
@@ -29,23 +28,27 @@ async function serve(file, account) {
   }
   return response(body, 200, { 'Content-Type': types[file.split('.').pop()] });
 }
-export async function handle(request, env = process.env) {
-  try {
+export async function handle(request, env = process.env, transport = fetch) {
+  let auth;
+  let result;
+  try { result = await route(); }
+  catch (error) { result = json({ error: error instanceof AuthUnavailable ? '로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.' : '요청 처리 중 문제가 발생했습니다.' }, error instanceof AuthUnavailable ? 503 : 500); }
+  return auth ? auth.finish(result) : result;
+  async function route() {
     const path = new URL(request.url).pathname;
     if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/date.js'].includes(path) && request.method === 'GET') {
       const file = path === '/login' ? 'login.html' : path.slice(1);
       return response(await readFile(join(process.cwd(), 'public', file), 'utf8'), 200, { 'Content-Type': types[file.split('.').pop()] });
     }
-    if (path === '/auth/logout' && request.method === 'POST') {
-      if (!sameOrigin(request)) return json({ error: '요청 출처를 확인할 수 없습니다.' }, 403);
-      return json({ ok: true }, 200, { 'Set-Cookie': cookie('', request, true) });
-    }
-    let config;
-    try { config = configuration(env); } catch {
+    if (request.method === 'POST' && !sameOrigin(request)) return json({ error: '요청 출처를 확인할 수 없습니다.' }, 403);
+    try { auth = createAuthContext(request, env, transport); } catch {
       if (path === '/' || path === '/coach.html' || path === '/index.html') return redirect('/login.html');
       return json({ error: '로그인 계정이 아직 설정되지 않았습니다. 운영자에게 문의해 주세요.' }, 503);
     }
-    const account = readSession(request, config);
+    if (path === '/auth/logout' && request.method === 'POST') {
+      await auth.logout();
+      return json({ ok: true });
+    }
     if (path === '/auth/login' && request.method === 'POST') {
       if (!sameOrigin(request)) return json({ error: '요청 출처를 확인할 수 없습니다.' }, 403);
       if (!request.headers.get('content-type')?.startsWith('application/json')) return json({ error: '잘못된 요청입니다.' }, 415);
@@ -62,12 +65,14 @@ export async function handle(request, env = process.env) {
       const attempt = attempts.get(email) || { count: 0, until: now + 15 * 60 * 1000 };
       if (attempt.count >= 10) return json({ error: '로그인 시도가 많습니다. 15분 후 다시 시도해 주세요.' }, 429, { 'Retry-After': '900' });
       attempt.count++; attempts.set(email, attempt);
-      const user = config.accounts.find(a => a.email === email);
-      const valid = await checkPassword(input.password, user?.passwordHash || await dummyHash);
-      if (!user || !valid) return json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401);
+      const { account: user, error } = await auth.login(email, input.password);
+      if (error === 'rate_limit') return json({ error: '로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.' }, 429);
+      if (error === 'credentials') return json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401);
+      if (error === 'unassigned') return json({ error: '사용 가능한 회원 권한이 등록되지 않았습니다. 운영자에게 문의해 주세요.' }, 403);
       attempts.delete(email);
-      return json({ redirect: homeFor(user) }, 200, { 'Set-Cookie': cookie(issueSession(user, config), request) });
+      return json({ redirect: homeFor(user) });
     }
+    const account = await auth.account();
     if (path === '/auth/session' && request.method === 'GET') return account ? json({ name: account.name, role: account.role, home: homeFor(account), storageId: issueStorageId(account) }) : json({ error: '로그인이 필요합니다.' }, 401);
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: '허용하지 않는 요청입니다.' }, 405);
     if (!account) return redirect('/login.html');
@@ -79,8 +84,8 @@ export async function handle(request, env = process.env) {
     if ((coachResource && account.role !== 'coach') || (studentResource && account.role !== 'student')) return response('접근 권한이 없습니다. 본인 역할의 화면을 이용해 주세요.', 403, { 'Content-Type': 'text/plain; charset=utf-8' });
     const result = await serve(file, account);
     return request.method === 'HEAD' ? new Response(null, { status: result.status, headers: result.headers }) : result;
-  } catch { return json({ error: '요청 처리 중 문제가 발생했습니다.' }, 500); }
+  }
 }
 // A non-secret, account-specific key prevents demo state being shared across logins.
-function issueStorageId(account) { return Buffer.from(account.email).toString('base64url'); }
+function issueStorageId(account) { return account.id; }
 export default { fetch: request => handle(request) };
