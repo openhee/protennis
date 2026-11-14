@@ -10,7 +10,7 @@
 - `/index.html` → `student` 역할만 접근 가능합니다. 코치는 직접 주소를 입력해도 403 응답을 받습니다.
 - 비밀번호는 Supabase Auth가 검증합니다. 역할은 DB의 활성 `members` 행에서 결정하며, 코치는 활성 `coaches` 행도 필요합니다. 요청 본문이나 user_metadata로 역할을 바꿀 수 없습니다.
 - 세션은 HttpOnly/SameSite 쿠키이며 HTTPS에서는 Secure 속성을 사용합니다. 공식 SSR SDK가 세션 갱신을 처리합니다.
-- 보호된 요청마다 Auth 사용자와 현재 DB 역할을 확인합니다. 로그아웃은 해당 Supabase 세션을 종료하고 쿠키를 삭제합니다.
+- 보호된 페이지 요청마다 서명된 Auth 토큰과 현재 DB 역할을 확인합니다. 지원되는 서명키에서는 캐시된 공개키로 토큰을 검증합니다. 로그아웃은 해당 Supabase 세션을 종료하고 쿠키를 삭제합니다.
 - 기본 계정·공용 비밀번호·회원가입은 없습니다. 설정이 없으면 로그인할 수 없습니다.
 
 ## 계정 설정과 로컬 실행
@@ -47,7 +47,7 @@ Vercel **Settings → Environment Variables**에 `.env.local`의 다음 값을 �
 
 Production과 필요한 Preview 환경에 설정한 뒤 **Redeploy**합니다. 이후 Supabase의 회원 역할/활성 상태 변경은 다음 요청부터 적용되며 재배포할 필요가 없습니다. 로그인 서버에는 service_role/secret 키가 필요하지 않습니다.
 
-공개 배포 파일은 로그인 관련 파일만 포함합니다. 보호된 페이지는 Vercel Function이 매 요청마다 세션과 역할을 검사한 뒤 반환합니다. 실제 데이터 파일 `dist/coach-data.js`는 함수 번들과 공개 배포에서 제외됩니다.
+보호된 페이지는 Vercel Function이 세션과 역할을 검사한 뒤 반환합니다. CSS·화면 스크립트·가상 시연 데이터는 인증 조회 없이 제공하지만, 실제 데이터 파일 `dist/coach-data.js`는 함수 번들과 공개 배포에서 제외됩니다.
 
 ## 기능
 

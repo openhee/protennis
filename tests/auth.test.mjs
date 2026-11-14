@@ -1,9 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generateKeyPairSync, sign } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { handle } from '../api/app.mjs';
 const env = { SUPABASE_URL: 'https://project.example.test', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' };
 const root = 'https://rally.example.test';
+const signing = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+const publicJwk = signing.publicKey.export({ format: 'jwk' });
+const jwtHeader = { alg: 'ES256', kid: 'test-signing-key', typ: 'JWT' };
+const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+function accessToken(user, expiresAt = Math.floor(Date.now() / 1000) + 3600) {
+  const unsigned = `${encode(jwtHeader)}.${encode({ sub: user.id, email: user.email, aud: 'authenticated', role: 'authenticated', is_anonymous: user.is_anonymous, iss: `${env.SUPABASE_URL}/auth/v1`, iat: Math.floor(Date.now() / 1000), exp: expiresAt })}`;
+  return `${unsigned}.${sign('sha256', Buffer.from(unsigned), { key: signing.privateKey, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
+}
 function request(path, { method = 'GET', body, cookie, origin = root } = {}) {
   return new Request(root + path, { method, headers: { ...(method === 'POST' ? { 'Content-Type': 'application/json', Origin: origin } : {}), ...(cookie ? { Cookie: cookie } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
 }
@@ -12,11 +21,12 @@ const cookies = res => res.headers.getSetCookie().map(s => s.split(';')[0]).join
 function backend(options = {}) {
   const state = { role: 'coach', memberActive: true, coachActive: true, assigned: true, revoked: false, failDB: false, refreshes: 0, userChecks: 0, ...options };
   const user = { id: '11111111-1111-4111-8111-111111111111', email: 'account@example.test', aud: 'authenticated', role: 'authenticated', is_anonymous: options.anonymous || false, user_metadata: { role: 'coach', ...(options.large ? { padding: 'x'.repeat(6000) } : {}) } };
-  const session = () => ({ access_token: 'verified-access-token', refresh_token: 'refresh-token', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user });
+  const session = () => { const expires_at = Math.floor(Date.now() / 1000) + 3600; return { access_token: accessToken(user, expires_at), refresh_token: 'refresh-token', token_type: 'bearer', expires_in: 3600, expires_at, user }; };
   const reply = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
   const transport = async (url, options) => {
     const u = new URL(url); const headers = new Headers(options.headers);
     assert.equal(headers.get('apikey'), env.SUPABASE_PUBLISHABLE_KEY);
+    if (u.pathname === '/auth/v1/.well-known/jwks.json') return reply({ keys: [{ ...publicJwk, kid: jwtHeader.kid, alg: jwtHeader.alg, use: 'sig' }] });
     if (u.pathname === '/auth/v1/token') {
       const body = JSON.parse(options.body);
       if (u.searchParams.get('grant_type') === 'refresh_token') {
@@ -27,11 +37,11 @@ function backend(options = {}) {
     }
     if (u.pathname === '/auth/v1/user') {
       state.userChecks++;
-      return !state.revoked && headers.get('authorization') === 'Bearer verified-access-token' ? reply(user) : reply({ error_code: 'bad_jwt', msg: 'invalid' }, 401);
+      return !state.revoked && headers.get('authorization')?.startsWith('Bearer ey') ? reply(user) : reply({ error_code: 'bad_jwt', msg: 'invalid' }, 401);
     }
     if (u.pathname === '/auth/v1/logout') { state.revoked = true; return new Response(null, { status: 204 }); }
     if (u.pathname.startsWith('/rest/v1/')) {
-      assert.equal(headers.get('authorization'), 'Bearer verified-access-token');
+      assert.match(headers.get('authorization') || '', /^Bearer ey/);
       if (state.failDB) return reply({ message: 'database unavailable' }, 503);
       if (u.pathname.endsWith('/members')) {
         assert.equal(u.searchParams.get('auth_user_id'), 'eq.' + user.id); assert.equal(u.searchParams.get('status'), 'eq.active');
@@ -54,25 +64,28 @@ test('missing Supabase config fails closed; public login works; old env is ignor
   assert.equal((await b.run('/', {}, {})).headers.get('location'), '/login.html');
   assert.equal((await b.run('/auth/login', { method: 'POST', body: {} }, { AUTH_SECRET: 'old-secret', AUTH_ACCOUNTS_JSON: '[]' })).status, 503);
 });
-test('unauthenticated protected resources require login', async () => {
+test('unauthenticated pages require login while public presentation assets avoid auth lookups', async () => {
   const b = backend();
-  for (const path of ['/', '/coach.html', '/index.html', '/coach.js', '/coach-data.sample.js']) assert.equal((await b.run(path)).headers.get('location'), '/login.html');
+  for (const path of ['/', '/coach.html', '/index.html']) assert.equal((await b.run(path)).headers.get('location'), '/login.html');
+  for (const path of ['/coach.css', '/coach.js', '/coach-loader.js', '/coach-data.sample.js']) assert.equal((await b.run(path)).status, 200);
+  assert.equal(b.state.userChecks, 0);
   assert.equal((await b.run('/auth/session')).status, 401);
 });
 test('coach accesses only coach resources; secure cookies and minimal session response', async () => {
   const b = backend(); const { res, cookie } = await login(b); assert.equal((await res.json()).redirect, '/coach.html');
   for (const header of res.headers.getSetCookie()) { assert.match(header, /HttpOnly/); assert.match(header, /Secure/); assert.match(header, /SameSite=Lax/); }
-  const page = await b.run('/coach.html', { cookie }); assert.equal(page.status, 200); assert.doesNotMatch(await page.text(), /href="index.html"/);
+  const page = await b.run('/coach.html', { cookie }); assert.equal(page.status, 200); const html = await page.text(); assert.doesNotMatch(html, /href="index.html"/); assert.match(html, /window\.RALLY_SESSION=Object\.freeze/);
   for (const path of ['/coach.css', '/coach.js', '/coach-loader.js', '/coach-data.sample.js']) assert.equal((await b.run(path, { cookie })).status, 200);
   assert.equal((await b.run('/index.html', { cookie })).status, 403);
   for (const path of ['/dist/coach.html', '/coach-data.js', '/.env.local', '/api/app']) assert.equal((await b.run(path, { cookie })).status, 404);
   const session = await b.run('/auth/session', { cookie }); assert.match(session.headers.get('cache-control'), /no-store/);
-  assert.deepEqual(await session.json(), { name: '테스트 계정', role: 'coach', home: '/coach.html', storageId: 'member-id' }); assert.ok(b.state.userChecks > 0);
+  assert.deepEqual(await session.json(), { name: '테스트 계정', role: 'coach', home: '/coach.html', storageId: 'member-id' }); assert.equal(b.state.userChecks, 0);
 });
 test('student cannot escalate with posted role or editable metadata', async () => {
   const b = backend({ role: 'student' }); const { cookie, res } = await login(b, { role: 'coach' }); assert.equal((await res.json()).redirect, '/index.html');
   assert.equal((await b.run('/index.html', { cookie })).status, 200);
-  for (const path of ['/coach.html', '/coach.js', '/coach-data.sample.js']) assert.equal((await b.run(path, { cookie })).status, 403);
+  assert.equal((await b.run('/coach.html', { cookie })).status, 403);
+  for (const path of ['/coach.js', '/coach-data.sample.js']) assert.equal((await b.run(path, { cookie })).status, 200);
 });
 test('unassigned, inactive, anonymous and unsupported admin users cannot log in', async () => {
   for (const options of [{ assigned: false }, { memberActive: false }, { coachActive: false }, { anonymous: true }, { role: 'admin' }]) {
@@ -103,7 +116,7 @@ test('chunked sessions work; logout clears all chunks and revokes the session', 
   assert.equal((await b.run('/auth/session', { cookie })).status, 200);
   const out = await b.run('/auth/logout', { method: 'POST', cookie }); assert.equal(out.status, 200); assert.ok(b.state.revoked);
   assert.equal(out.headers.getSetCookie().length, res.headers.getSetCookie().length); for (const h of out.headers.getSetCookie()) assert.match(h, /Max-Age=0/);
-  assert.equal((await b.run('/auth/session', { cookie })).status, 401);
+  assert.equal((await b.run('/auth/session', { cookie: cookies(out) })).status, 401);
 });
 test('bad credentials, cross-origin mutations and malformed bodies fail', async () => {
   const b = backend(); assert.equal((await b.run('/auth/login', { method: 'POST', body: { email: 'bad@example.test', password: 'bad' } })).status, 401);

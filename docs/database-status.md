@@ -19,7 +19,7 @@
 - `20261112002703_create_protennis_schema.sql`
 - `20261112002943_restrict_rls_event_trigger_execution.sql`
 
-CLI로 마이그레이션 파일을 생성한 뒤 MCP apply_migration으로 호스팅 DB에 적용했다. 원격에서 확정된 버전과 로컬 파일명을 맞췄다. `supabase/schema.sql`은 최초 스키마 SQL 참고본이며 추가 적용 대상으로 사용하지 않는다. 실제 재현은 `supabase/migrations`의 순서를 따른다.
+CLI로 마이그레이션 파일을 생성한 뒤 MCP apply_migration으로 호스팅 DB에 적용했다. 원격에서 확정된 버전과 로컬 파일명을 맞췄다. 최초 스키마는 `supabase/migrations/20261112002703_create_protennis_schema.sql`에서 확인한다. 내용이 동일한 별도 SQL 복사본은 제거했으며 실제 재현은 `supabase/migrations`의 순서를 따른다.
 
 Supabase CLI 버전별 명령을 확인하고 운영 DB에는 이미 적용된 SQL을 직접 다시 실행하지 않는다. 로컬 migration list와 원격 이력 비교는 프로젝트 연결 후 수행할 수 있다.
 

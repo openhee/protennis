@@ -3,7 +3,10 @@ import { join } from 'node:path';
 import { createAuthContext, AuthUnavailable, homeFor } from '../lib/supabase-auth.mjs';
 const attempts = new Map();
 const types = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8' };
-const assets = new Set(['coach.css', 'coach.js', 'coach-loader.js', 'coach-data.sample.js']);
+// These files contain presentation code and synthetic demo data only. Serving
+// them without an auth lookup avoids several Supabase round trips while a page
+// is loading. Protected HTML and real coach data still require authorization.
+const publicAssets = new Set(['coach.css', 'coach.js', 'coach-loader.js', 'coach-data.sample.js']);
 const security = {
   'Cache-Control': 'private, no-store, max-age=0',
   'Vary': 'Cookie',
@@ -24,7 +27,15 @@ async function serve(file, account) {
   if (file.endsWith('.html')) {
     // Remove cross-role navigation. Authorization is also enforced below on every request.
     if (account.role === 'coach') body = body.replace('<a href="index.html">↗　레슨생 화면</a>', '');
-    body = body.replace('</body>', '<script src="/session-ui.js" defer></script></body>');
+    const session = JSON.stringify({
+      name: account.name,
+      role: account.role,
+      home: homeFor(account),
+      storageId: issueStorageId(account)
+    }).replaceAll('<', '\\u003c');
+    // Reuse the authorization result that was already needed to serve this
+    // page. Client scripts no longer call /auth/session again after navigation.
+    body = body.replace('</body>', `<script>window.RALLY_SESSION=Object.freeze(${session})</script><script src="/session-ui.js" defer></script></body>`);
   }
   return response(body, 200, { 'Content-Type': types[file.split('.').pop()] });
 }
@@ -39,6 +50,14 @@ export async function handle(request, env = process.env, transport = fetch) {
     if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/date.js'].includes(path) && request.method === 'GET') {
       const file = path === '/login' ? 'login.html' : path.slice(1);
       return response(await readFile(join(process.cwd(), 'public', file), 'utf8'), 200, { 'Content-Type': types[file.split('.').pop()] });
+    }
+    const requestedFile = path.slice(1);
+    if (request.method === 'GET' && publicAssets.has(requestedFile)) {
+      return response(await readFile(join(process.cwd(), 'dist', requestedFile), 'utf8'), 200, {
+        'Content-Type': types[requestedFile.split('.').pop()],
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+        'Vary': 'Accept-Encoding'
+      });
     }
     if (request.method === 'POST' && !sameOrigin(request)) return json({ error: '요청 출처를 확인할 수 없습니다.' }, 403);
     try { auth = createAuthContext(request, env, transport); } catch {
@@ -78,7 +97,7 @@ export async function handle(request, env = process.env, transport = fetch) {
     if (!account) return redirect('/login.html');
     if (path === '/') return redirect(homeFor(account));
     const file = path.slice(1);
-    const coachResource = file === 'coach.html' || assets.has(file);
+    const coachResource = file === 'coach.html';
     const studentResource = file === 'index.html';
     if (!coachResource && !studentResource) return response('Not found', 404);
     if ((coachResource && account.role !== 'coach') || (studentResource && account.role !== 'student')) return response('접근 권한이 없습니다. 본인 역할의 화면을 이용해 주세요.', 403, { 'Content-Type': 'text/plain; charset=utf-8' });

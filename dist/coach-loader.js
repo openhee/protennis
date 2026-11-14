@@ -1,11 +1,16 @@
 // Local source data is excluded from Git. Fall back to synthetic demo data.
 (async function () {
-  // The server protects this file and every coach asset. Session lookup also
-  // namespaces browser-only demo state for the signed-in account.
+  // The server protects coach.html and embeds the verified account. This
+  // loader only namespaces browser-only demo state for that account.
   try {
-    const response = await fetch('/auth/session', { cache: 'no-store' });
-    if (!response.ok) { location.replace('/login.html'); return; }
-    const session = await response.json();
+    // coach.html embeds the session it has already verified. The fallback
+    // supports an older cached page while a new deployment rolls out.
+    let session = window.RALLY_SESSION;
+    if (!session) {
+      const response = await fetch('/auth/session', { cache: 'no-store' });
+      if (!response.ok) { location.replace('/login.html'); return; }
+      session = await response.json();
+    }
     if (session.role !== 'coach') { location.replace(session.home); return; }
     window.RALLY_ACCOUNT = session.storageId;
     window.RALLY_COACH_NAME = session.name;
