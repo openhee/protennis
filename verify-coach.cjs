@@ -94,3 +94,18 @@ nodes['#member-card-edit'].onclick();
 assert.equal(nodes['#member-card'].open,false);
 assert.equal(nodes['#editor'].open,true);
 console.log('PASS: lesson cell opens member card and edit action opens the matching slot.');
+ui.liveFixture={entries:[{id:'entry-1',start:'2026-11-17T10:00:00Z',end:'2026-11-17T10:20:00Z',type:'lesson',status:'open',coach:'신홍경',full:true}],bookings:[{id:'booking-1',start:'2026-11-17T10:00:00Z',member:'신희찬',status:'confirmed',attendance:'pending'}]};
+ui.fetch=async()=>({ok:true,status:200,json:async()=>ui.liveFixture});
+vm.runInContext("weekStart='2026-11-16'",ui);
+(async()=>{
+ await vm.runInContext('refreshLiveCalendar()',ui);
+ const tuesday=nodes['#calendar-view'].children[1];
+ const event=tuesday.children[1].children[0];
+ assert.equal(event.children[0].textContent,'19:00 – 19:20');
+ assert.equal(event.children[1].textContent,'신희찬');
+ event.onclick();assert.equal(nodes['#member-card-title'].textContent,'신희찬');
+ assert.equal(nodes['#stat-total'].children[0].textContent,'1');
+ ui.liveFixture={entries:[],bookings:[]};await vm.runInContext('refreshLiveCalendar()',ui);
+ assert.equal(nodes['#calendar-view'].children[1].children[1].children[0].textContent,'등록된 일정 없음');
+ console.log('PASS: live API renders Korean-time bookings, member cards, counts and empty state.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
