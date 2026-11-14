@@ -76,3 +76,21 @@ for(const [date,column] of [['2026-11-11',3],['2026-11-12',4],['2026-11-16',-1],
  assert.deepEqual(headers.flatMap((node,i)=>node.className==='today-head'?[i]:[]),column<0?[]:[column]);
 }
 console.log('PASS: today column moves to Thursday on Nov 12; no highlight outside the demo week/year.');
+vm.runInContext("changeWeek('2026-11-18')",ui);
+assert.equal(vm.runInContext('weekStart',ui),'2026-11-16');
+assert.equal(vm.runInContext("Object.values(data).filter(s=>s.kind==='lesson').length",ui),0);
+vm.runInContext("data[key('이광한',0,'6:00')]={kind:'open',memo:''};save();changeWeek('2026-11-09')",ui);
+assert.notEqual(vm.runInContext("data[key('이광한',0,'6:00')].kind",ui),'open');
+vm.runInContext("changeWeek('2026-11-16')",ui);
+assert.equal(vm.runInContext("data[key('이광한',0,'6:00')].kind",ui),'open');
+vm.runInContext("changeWeek('2027-01-01')",ui);
+assert.equal(vm.runInContext('weekStart',ui),'2026-12-28');
+assert.equal(vm.runInContext('dateAt(6)',ui),'2027-01-03');
+console.log('PASS: week isolation, saved week restoration and year boundary navigation.');
+vm.runInContext("changeWeek('2026-11-09');coach='이광한';openMemberCard(1,'7:40')",ui);
+assert.equal(nodes['#member-card'].open,true);
+assert.equal(nodes['#member-card-title'].textContent,data['이광한|1|7:40'].name);
+nodes['#member-card-edit'].onclick();
+assert.equal(nodes['#member-card'].open,false);
+assert.equal(nodes['#editor'].open,true);
+console.log('PASS: lesson cell opens member card and edit action opens the matching slot.');

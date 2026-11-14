@@ -5,7 +5,7 @@
   "outputDirectory": "public",
   "functions": {
     "api/app.mjs": {
-      "includeFiles": "{dist/{index.html,coach.html,coach.css,coach.js,coach-loader.js,coach-data.sample.js},public/**}"
+      "includeFiles": "{dist/{index.html,coach.html,member.html,booking.html,coach.css,coach.js,coach-loader.js,coach-data.sample.js},public/**}"
     }
   },
   "rewrites": [{ "source": "/(.*)", "destination": "/api/app" }]

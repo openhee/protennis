@@ -43,6 +43,8 @@ function backend(options = {}) {
     if (u.pathname.startsWith('/rest/v1/')) {
       assert.match(headers.get('authorization') || '', /^Bearer ey/);
       if (state.failDB) return reply({ message: 'database unavailable' }, 503);
+      if (u.pathname === '/rest/v1/rpc/booking_dashboard') return reply({ passes: [], entries: [], bookings: [], products: [] });
+      if (u.pathname === '/rest/v1/rpc/booking_action') return reply({ id: 'booking-id' });
       if (u.pathname.endsWith('/members')) {
         assert.equal(u.searchParams.get('auth_user_id'), 'eq.' + user.id); assert.equal(u.searchParams.get('status'), 'eq.active');
         return reply(state.assigned && state.memberActive ? [{ id: 'member-id', branch_id: 'branch-id', display_name: '테스트 계정', role: state.role, status: 'active' }] : []);
@@ -63,6 +65,19 @@ test('missing Supabase config fails closed; public login works; old env is ignor
   const b = backend(); assert.equal((await b.run('/login.html', {}, {})).status, 200);
   assert.equal((await b.run('/', {}, {})).headers.get('location'), '/login.html');
   assert.equal((await b.run('/auth/login', { method: 'POST', body: {} }, { AUTH_SECRET: 'old-secret', AUTH_ACCOUNTS_JSON: '[]' })).status, 503);
+});
+
+test('live booking routes require authentication, matching role and same origin', async () => {
+ const student=backend({role:'student'}),coach=backend();
+ assert.equal((await student.run('/api/booking-dashboard?day=2026-11-16')).status,401);
+ const {cookie}=await login(student),{cookie:coachCookie}=await login(coach);
+ assert.equal((await student.run('/booking.html',{cookie})).status,200);
+ assert.equal((await student.run('/api/booking-dashboard?day=invalid',{cookie})).status,400);
+ assert.equal((await student.run('/api/booking-dashboard?day=2026-11-16',{cookie})).status,200);
+ assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',body:{action:'open',payload:{}}})).status,403);
+ assert.equal((await coach.run('/api/booking-action',{cookie:coachCookie,method:'POST',body:{action:'reserve',payload:{}}})).status,403);
+ assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',origin:'https://evil.test',body:{action:'reserve',payload:{}}})).status,403);
+ assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',body:{action:'reserve',payload:{}}})).status,200);
 });
 test('unauthenticated pages require login while public presentation assets avoid auth lookups', async () => {
   const b = backend();

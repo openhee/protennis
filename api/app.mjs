@@ -92,12 +92,39 @@ export async function handle(request, env = process.env, transport = fetch) {
       return json({ redirect: homeFor(user) });
     }
     const account = await auth.account();
+    if (path === '/api/booking-dashboard' && request.method === 'GET') {
+      if (!account) return json({error:'로그인이 필요합니다.'},401);
+      const day=new URL(request.url).searchParams.get('day');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'') || !Number.isFinite(Date.parse(day))) return json({error:'날짜를 확인하세요.'},400);
+      const result=await auth.bookingRpc('booking_dashboard',{day});
+      return result.error?json({error:'일정을 조회하지 못했습니다.'},503):json(result.data);
+    }
+    if(path==='/api/booking-action' && request.method==='POST'){
+      if(!account)return json({error:'로그인이 필요합니다.'},401);
+      const body=await request.text();if(body.length>4096)return json({error:'요청이 너무 큽니다.'},413);
+      let input;try{input=JSON.parse(body);}catch{return json({error:'잘못된 요청입니다.'},400);}
+      if(!input||!['open','block','reserve'].includes(input.action)||!input.payload||typeof input.payload!=='object')return json({error:'잘못된 요청입니다.'},400);
+      if((input.action==='reserve')!==(account.role==='student'))return json({error:'권한이 없습니다.'},403);
+      const result=await auth.bookingRpc('booking_action',input);
+      if(result.error){const message=result.error.code==='P0001'?result.error.message:result.error.code==='23P01'?'이미 등록된 시간과 겹칩니다.':'요청을 처리하지 못했습니다. 일정을 새로 조회해 주세요.';return json({error:message},409);}
+      return json(result.data);
+    }
+    if (path === '/api/schedules' && request.method === 'GET') {
+      if (!account) return json({ error: '로그인이 필요합니다.' }, 401);
+      const from = new URL(request.url).searchParams.get('from');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '')) return json({ error: '시작 날짜를 확인해 주세요.' }, 400);
+      const start = new Date(from + 'T00:00:00+09:00');
+      if (!Number.isFinite(start.getTime()) || new Date(start.getTime() + 9 * 3600000).toISOString().slice(0,10) !== from) return json({ error: '유효하지 않은 날짜입니다.' }, 400);
+      const until = new Date(start.getTime() + 7 * 86400000);
+      return json({ source: 'database', from, entries: await auth.schedules(account, start.toISOString(), until.toISOString()) });
+    }
     if (path === '/auth/session' && request.method === 'GET') return account ? json({ name: account.name, role: account.role, home: homeFor(account), storageId: issueStorageId(account) }) : json({ error: '로그인이 필요합니다.' }, 401);
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: '허용하지 않는 요청입니다.' }, 405);
     if (!account) return redirect('/login.html');
     if (path === '/') return redirect(homeFor(account));
+    if(path==='/booking.html')return serve('booking.html',account);
     const file = path.slice(1);
-    const coachResource = file === 'coach.html';
+    const coachResource = file === 'coach.html' || file === 'member.html';
     const studentResource = file === 'index.html';
     if (!coachResource && !studentResource) return response('Not found', 404);
     if ((coachResource && account.role !== 'coach') || (studentResource && account.role !== 'student')) return response('접근 권한이 없습니다. 본인 역할의 화면을 이용해 주세요.', 403, { 'Content-Type': 'text/plain; charset=utf-8' });
