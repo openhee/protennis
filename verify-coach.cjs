@@ -30,7 +30,7 @@ console.log(`PASS: 1680 slots; 176 original entries preserved; 17 coupon records
 
 // Exercise actual UI handlers in a minimal DOM; visual layout needs a browser.
 class Node {
- constructor(){this.children=[];this.value='';this.hidden=false;this.textContent='';this.attrs={};}
+ constructor(){this.children=[];this.value='';this.hidden=false;this.textContent='';this.attrs={};this.dataset={};}
  append(...nodes){this.children.push(...nodes)}
  replaceChildren(...nodes){this.children=nodes}
  setAttribute(k,v){this.attrs[k]=v}
@@ -94,6 +94,9 @@ nodes['#member-card-edit'].onclick();
 assert.equal(nodes['#member-card'].open,false);
 assert.equal(nodes['#editor'].open,true);
 console.log('PASS: lesson cell opens member card and edit action opens the matching slot.');
+assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:00','19:40').count",ui),3);
+assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:40','19:00').end",ui),'2026-11-17T20:00');
+assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:00','19:00').count",ui),1);
 ui.liveFixture={entries:[{id:'entry-1',start:'2026-11-17T10:00:00Z',end:'2026-11-17T10:20:00Z',type:'lesson',status:'open',coach:'신홍경',full:true}],bookings:[{id:'booking-1',start:'2026-11-17T10:00:00Z',member:'신희찬',status:'confirmed',attendance:'pending'}]};
 ui.fetch=async()=>({ok:true,status:200,json:async()=>ui.liveFixture});
 vm.runInContext("weekStart='2026-11-16'",ui);

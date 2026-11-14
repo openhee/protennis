@@ -6,7 +6,6 @@
  // Keep the endpoint fallback for older/cached pages during deployment.
  let session=window.RALLY_SESSION;try{session ||= await check()}catch{return}if(!session)return;
  const button=document.createElement('button');button.type='button';button.textContent='로그아웃';button.className='button secondary';button.onclick=logout;
- const bookingLink=document.createElement('a');bookingLink.href='/booking.html';bookingLink.textContent='레슨 예약 · 실제 운영';bookingLink.className='button secondary';(document.querySelector('.heading')||document.querySelector('main')).prepend(bookingLink);
  if(document.querySelector('.member-page')){document.querySelector('header').append(button);return;}
  if(session.role==='coach'){const target=document.querySelector('header');const label=document.createElement('span');label.textContent=`${session.name} · 코치`;target.replaceChildren(label,button)}else{const old=document.querySelector('#role');if(old)old.hidden=true;document.querySelector('.profile')?.append(button)}
  window.addEventListener('pageshow',event=>{if(event.persisted)check().catch(()=>location.replace('/login.html'))});

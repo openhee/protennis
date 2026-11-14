@@ -103,9 +103,9 @@ export async function handle(request, env = process.env, transport = fetch) {
       if(!account)return json({error:'로그인이 필요합니다.'},401);
       const body=await request.text();if(body.length>4096)return json({error:'요청이 너무 큽니다.'},413);
       let input;try{input=JSON.parse(body);}catch{return json({error:'잘못된 요청입니다.'},400);}
-      if(!input||!['open','block','reserve'].includes(input.action)||!input.payload||typeof input.payload!=='object')return json({error:'잘못된 요청입니다.'},400);
+      if(!input||!['open','block','reserve','bulk-open'].includes(input.action)||!input.payload||typeof input.payload!=='object')return json({error:'잘못된 요청입니다.'},400);
       if((input.action==='reserve')!==(account.role==='student'))return json({error:'권한이 없습니다.'},403);
-      const result=await auth.bookingRpc('booking_action',input);
+      const result=await auth.bookingRpc(input.action==='bulk-open'?'open_lesson_range':'booking_action',input.action==='bulk-open'?{payload:input.payload}:input);
       if(result.error){const message=result.error.code==='P0001'?result.error.message:result.error.code==='23P01'?'이미 등록된 시간과 겹칩니다.':'요청을 처리하지 못했습니다. 일정을 새로 조회해 주세요.';return json({error:message},409);}
       return json(result.data);
     }
@@ -122,7 +122,7 @@ export async function handle(request, env = process.env, transport = fetch) {
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: '허용하지 않는 요청입니다.' }, 405);
     if (!account) return redirect('/login.html');
     if (path === '/') return redirect(homeFor(account));
-    if(path==='/booking.html')return serve('booking.html',account);
+    if(path==='/booking.html')return account.role==='coach'?redirect('/coach.html'):serve('booking.html',account);
     const file = path.slice(1);
     const coachResource = file === 'coach.html' || file === 'member.html';
     const studentResource = file === 'index.html';

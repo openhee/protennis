@@ -45,6 +45,7 @@ function backend(options = {}) {
       if (state.failDB) return reply({ message: 'database unavailable' }, 503);
       if (u.pathname === '/rest/v1/rpc/booking_dashboard') return reply({ passes: [], entries: [], bookings: [], products: [] });
       if (u.pathname === '/rest/v1/rpc/booking_action') return reply({ id: 'booking-id' });
+      if (u.pathname === '/rest/v1/rpc/open_lesson_range') return reply({ count: 3 });
       if (u.pathname.endsWith('/members')) {
         assert.equal(u.searchParams.get('auth_user_id'), 'eq.' + user.id); assert.equal(u.searchParams.get('status'), 'eq.active');
         return reply(state.assigned && state.memberActive ? [{ id: 'member-id', branch_id: 'branch-id', display_name: '테스트 계정', role: state.role, status: 'active' }] : []);
@@ -75,6 +76,9 @@ test('live booking routes require authentication, matching role and same origin'
  assert.equal((await student.run('/api/booking-dashboard?day=invalid',{cookie})).status,400);
  assert.equal((await student.run('/api/booking-dashboard?day=2026-11-16',{cookie})).status,200);
  assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',body:{action:'open',payload:{}}})).status,403);
+ assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',body:{action:'bulk-open',payload:{}}})).status,403);
+ const bulk=await coach.run('/api/booking-action',{cookie:coachCookie,method:'POST',body:{action:'bulk-open',payload:{}}});assert.equal(bulk.status,200);assert.equal((await bulk.json()).count,3);
+ assert.equal((await coach.run('/booking.html',{cookie:coachCookie})).headers.get('location'),'/coach.html');
  assert.equal((await coach.run('/api/booking-action',{cookie:coachCookie,method:'POST',body:{action:'reserve',payload:{}}})).status,403);
  assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',origin:'https://evil.test',body:{action:'reserve',payload:{}}})).status,403);
  assert.equal((await student.run('/api/booking-action',{cookie,method:'POST',body:{action:'reserve',payload:{}}})).status,200);

@@ -25,7 +25,7 @@ function initialSchedule(){
 }
 const $=s=>document.querySelector(s);
 const liveMode=Boolean(window.RALLY_SESSION);
-let liveRequest=0;
+let liveRequest=0,rangeDialog=null,dragRange=null,rangeProducts=[];
 let data=initialSchedule(),coach=COACHES.includes(window.RALLY_COACH_NAME)?window.RALLY_COACH_NAME:COACHES[0],active=null,toastTimer,view='calendar';
 $('#coach-select').value=coach;
 try{const saved=JSON.parse(localStorage.getItem(weekKey()));if(saved&&Object.keys(data).every(k=>saved[k]&&['unknown','open','blocked','lesson','record'].includes(saved[k].kind)))data=saved;}catch{}
@@ -139,9 +139,10 @@ function liveCard(e){
  const details=element('dl','member-details');
  for(const [label,value] of [['예약 상태',e.people.length?'예약 확정':liveLabel(e)],['예약 인원',String(e.people.length)+'명'],['출석 상태',e.people.map(b=>({pending:'출석 처리 전',present:'출석 완료',absent:'불참',no_show:'미출석'}[b.attendance]||b.attendance)).join(', ')||'—']])details.append(element('dt','',label),element('dd','',value));
  $('#member-card-content').replaceChildren(details,element('p','member-card-note','실제 등록된 일정입니다. 수강권 상세·출석 수정은 연결 준비 중입니다.'));
- $('#member-card-edit').textContent='예약 관리 화면';$('#member-card-edit').hidden=false;$('#member-card-edit').onclick=()=>{location.href='/booking.html';};$('#member-card').showModal();
+ $('#member-card-edit').hidden=true;$('#member-card').showModal();
 }
 async function refreshLiveCalendar(){
+ if(rangeDialog?.open||dragRange)return;
  const request=++liveRequest,week=weekStart,today=window.RallyDate.key();
  if(window.renderWeekNavigation)window.renderWeekNavigation(week,today);
  $('#current-date').textContent='오늘 '+window.RallyDate.label()+' · 한국 시간';
@@ -153,12 +154,13 @@ async function refreshLiveCalendar(){
   const response=await fetch('/api/booking-dashboard?day='+week,{cache:'no-store'});
   if(response.status===401){location.replace('/login.html');return;}
   if(!response.ok)throw Error();const payload=await response.json();if(request!==liveRequest)return;
+  rangeProducts=payload.products||[];
   const items=liveItems(payload),root=$('#calendar-view');root.replaceChildren();
   const buttonFor=e=>{const b=element('button','calendar-event '+(e.type==='blocked'?'blocked':e.people.length?'lesson':'open'));b.type='button';b.append(element('span','calendar-event-time',e.time+' – '+koreaParts(e.end).time),element('span','calendar-event-title',liveLabel(e)));b.setAttribute('aria-label',e.date+' '+e.time+' '+liveLabel(e));b.onclick=()=>liveCard(e);return b;};
   DAYS.forEach((day,i)=>{const date=dateAt(i),article=element('article','calendar-day'+(date===today?' today':'')),head=element('div','calendar-day-head');head.append(element('span','',day+'요일'),element('strong','',String(Number(date.slice(-2)))));article.append(head);const events=element('div','calendar-events'),entries=items.filter(e=>e.date===date);for(const e of entries)events.append(buttonFor(e));if(!entries.length)events.append(element('p','calendar-empty','등록된 일정 없음'));article.append(events);root.append(article);});
   const table=$('#timetable'),thead=element('thead'),head=element('tr');head.append(element('th','','시간'));DAYS.forEach((d,i)=>{const th=element('th',dateAt(i)===today?'today-head':'',d+' '+Number(dateAt(i).slice(-2)));th.scope='col';head.append(th);});thead.append(head);table.append(thead);
   const times=[...new Set([...TIMES.map(t=>t.padStart(5,'0')),...items.map(e=>e.time)])].sort(),body=element('tbody');
-  for(const time of times){const row=element('tr');row.append(element('td','',time));DAYS.forEach((d,i)=>{const cell=element('td'),entries=items.filter(e=>e.date===dateAt(i)&&e.time===time);entries.forEach(e=>cell.append(buttonFor(e)));if(!entries.length){const b=element('button','slot unknown','+ 시간 등록');b.type='button';b.setAttribute('aria-label',dateAt(i)+' '+time+' 시간 등록 화면 열기');b.onclick=()=>{location.href='/booking.html';};cell.append(b);}row.append(cell);});body.append(row);}table.append(body);
+  for(const time of times){const row=element('tr');row.append(element('td','',time));DAYS.forEach((d,i)=>{const cell=element('td'),entries=items.filter(e=>e.date===dateAt(i)&&e.time===time);entries.forEach(e=>cell.append(buttonFor(e)));if(!entries.length){const b=element('button','slot unknown','+ 시간 등록');b.type='button';b.setAttribute('aria-label',dateAt(i)+' '+time+' 시간 등록 화면 열기');b.dataset.day=dateAt(i);b.dataset.time=time;b.onclick=()=>openRange(dateAt(i),time,time);b.onpointerdown=event=>{if(event.button!==0||event.pointerType==='touch')return;event.preventDefault();b.focus();dragRange={date:b.dataset.day,start:time,end:time};paintRange();};b.onpointerenter=()=>{if(dragRange&&dragRange.date===b.dataset.day){dragRange.end=time;paintRange();}};cell.append(b);}row.append(cell);});body.append(row);}table.append(body);
   const bookings=payload.bookings.filter(b=>b.status==='confirmed');
   for(const [id,count] of [['total',bookings.length],['attended',bookings.filter(b=>b.attendance==='present').length],['absent',bookings.filter(b=>['absent','no_show'].includes(b.attendance)).length],['open',items.filter(e=>e.type==='lesson'&&e.status==='open'&&!e.full&&Date.parse(e.start)>Date.now()).length]])$('#stat-'+id).replaceChildren(document.createTextNode(String(count)),element('small','',id==='open'?'칸':'건'));
   $('#review-count').textContent='실제 DB 일정 · '+items.length+'건';$('#view-description').textContent='한국 시간 · 일정 시작 시각에 표시';
@@ -167,6 +169,7 @@ async function refreshLiveCalendar(){
 }
 if(liveMode){
  $('#coach-select').replaceChildren(element('option','',window.RALLY_SESSION.name));$('#coach-select').disabled=true;
+ installRangeEditor();
  $('#reset').textContent='일정 새로고침';$('#reset').onclick=()=>refreshLiveCalendar();
  document.querySelector('.source-note p').textContent='로그인한 코치의 실제 일정입니다. 30초마다, 그리고 이 화면으로 돌아오면 자동으로 갱신됩니다.';
  document.querySelector('.sidebar-bottom').textContent='실제 DB 연결 · 내 일정';
@@ -174,14 +177,54 @@ if(liveMode){
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLiveCalendar();});
  window.addEventListener('pageshow',()=>refreshLiveCalendar());window.setInterval(()=>{if(!document.hidden)refreshLiveCalendar();},30000);
 }
-if(typeof document.getElementById==='function'){
- const preview=element('button','button secondary','신희찬 회원 카드 미리보기');preview.type='button';
- preview.onclick=()=>{
-  $('#member-card-title').textContent='신희찬';
-  $('#member-card-context').textContent='개인 레슨 수강권';
-  $('#member-card-content').replaceChildren($('#member-example').content.cloneNode(true));
-  $('#member-card-edit').hidden=true;$('#member-card').showModal();
+
+function minuteValue(time){const [h,m]=time.split(':').map(Number);return h*60+m;}
+function rangeBounds(date,first,last){
+ const start=Math.min(minuteValue(first),minuteValue(last)),end=Math.max(minuteValue(first),minuteValue(last))+20;
+ const stamp=minutes=>new Date(Date.parse(date+'T00:00:00Z')+minutes*60000).toISOString().slice(0,16);
+ return {start:stamp(start),end:stamp(end),count:(end-start)/20};
+}
+function paintRange(){
+ document.querySelectorAll('#timetable button[data-day]').forEach(b=>{
+  b.classList.toggle('range-selected',Boolean(dragRange&&b.dataset.day===dragRange.date&&minuteValue(b.dataset.time)>=Math.min(minuteValue(dragRange.start),minuteValue(dragRange.end))&&minuteValue(b.dataset.time)<=Math.max(minuteValue(dragRange.start),minuteValue(dragRange.end))));
+ });
+}
+function openRange(date,first,last){
+ if(!rangeDialog||rangeDialog.open)return;
+ const bounds=rangeBounds(date,first,last);
+ document.getElementById('range-start').value=bounds.start;document.getElementById('range-end').value=bounds.end;
+ const product=document.getElementById('range-product');product.replaceChildren();
+ for(const p of rangeProducts.filter(p=>p.duration===20)){const o=element('option','',p.name);o.value=p.id;product.append(o);}
+ document.getElementById('range-error').textContent='';
+ document.getElementById('range-action').value='bulk-open';
+ updateRangeSummary();rangeDialog.showModal();
+}
+function updateRangeSummary(){
+ const first=document.getElementById('range-start').value,last=document.getElementById('range-end').value;
+ const count=(Date.parse(last+':00+09:00')-Date.parse(first+':00+09:00'))/1200000;
+ document.getElementById('range-summary').textContent=document.getElementById('range-action').value==='block'?'선택한 범위를 예약 불가로 등록합니다.':Number.isInteger(count)&&count>0?'20분 레슨 '+count+'개를 예약 가능으로 엽니다.':'시작·종료 시간을 20분 단위로 선택하세요.';
+}
+function installRangeEditor(){
+ rangeDialog=element('dialog');rangeDialog.id='range-editor';rangeDialog.setAttribute('aria-labelledby','range-title');
+ rangeDialog.innerHTML='<form id="range-form"><div class="dialog-head"><h2 id="range-title">선택한 시간 열기</h2><button type="button" class="close" id="range-close" aria-label="닫기">×</button></div><p class="field-note">같은 날짜에서 위아래로 드래그하세요. 선택 범위는 저장 전에 수정할 수 있습니다.</p><label for="range-action">시간 상태</label><select id="range-action"><option value="bulk-open">예약 가능 · 20분씩 나누기</option><option value="block">예약 불가</option></select><label for="range-product">레슨 상품</label><select id="range-product"></select><label for="range-start">시작 · 한국 시간</label><input type="datetime-local" id="range-start" required><label for="range-end">종료 · 한국 시간</label><input type="datetime-local" id="range-end" required><p id="range-summary" class="field-note"></p><p id="range-error" role="alert"></p><div class="dialog-actions"><button type="button" class="button secondary" id="range-cancel">취소</button><button type="submit" class="button" id="range-save">선택한 시간 저장</button></div></form>';
+ document.body.append(rangeDialog);
+ for(const id of ['range-close','range-cancel'])document.getElementById(id).onclick=()=>rangeDialog.close();
+ for(const id of ['range-start','range-end','range-action'])document.getElementById(id).onchange=updateRangeSummary;
+ document.getElementById('range-form').onsubmit=async event=>{
+  event.preventDefault();const saveButton=document.getElementById('range-save');if(saveButton.disabled)return;
+  const action=document.getElementById('range-action').value,product=document.getElementById('range-product').value;
+  if(action==='bulk-open'&&!product){document.getElementById('range-error').textContent='등록된 20분 레슨 상품이 없습니다.';return;}
+  saveButton.disabled=true;document.getElementById('range-error').textContent='저장 중…';
+  try{
+   const response=await fetch('/api/booking-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,payload:{starts_at:document.getElementById('range-start').value+':00+09:00',ends_at:document.getElementById('range-end').value+':00+09:00',product_id:product}})});
+   const result=await response.json();if(!response.ok)throw Error(result.error||'저장하지 못했습니다.');
+   rangeDialog.close();await refreshLiveCalendar();notify(action==='bulk-open'?result.count+'개의 레슨 시간을 열었습니다.':'예약 불가 시간을 등록했습니다.');
+  }catch(error){document.getElementById('range-error').textContent=error.message;}finally{saveButton.disabled=false;}
  };
- document.querySelector('.heading').append(preview);
+ const add=element('button','button','예약 시간 열기');add.type='button';add.onclick=()=>openRange(weekStart,'18:00','18:40');document.querySelector('.heading').append(add);
+ const hint=element('p','range-hint','상세 시간표에서 같은 요일의 빈 시간을 드래그하면 20분씩 한 번에 열 수 있어요. 휴대폰에서는 빈 칸을 누른 뒤 종료 시간을 선택하세요.');
+ document.querySelector('.toolbar').after(hint);
+ window.addEventListener('pointerup',()=>{if(!dragRange)return;const range=dragRange;dragRange=null;paintRange();openRange(range.date,range.start,range.end);});
+ window.addEventListener('pointercancel',()=>{dragRange=null;paintRange();});
 }
 
