@@ -47,6 +47,13 @@ const ui={window:context.window,document:{querySelector:s=>{assert.ok(nodes[s],`
 vm.createContext(ui);
 vm.runInContext(fs.readFileSync(`${__dirname}/public/date.js`,'utf8'),ui);
 vm.runInContext(code,ui);
+assert.equal(nodes['#calendar-view'].children.length,7);
+assert.equal(nodes['#calendar-view'].hidden,false);
+assert.equal(nodes['#table-view'].hidden,true);
+nodes['#view-table'].onclick();
+assert.equal(nodes['#calendar-view'].hidden,true);
+assert.equal(nodes['#table-view'].hidden,false);
+nodes['#view-calendar'].onclick();
 vm.runInContext("edit(1,'7:40')",ui);
 assert.equal(nodes['#student-name'].value,data['이광한|1|7:40'].name);
 assert.equal(nodes['#session'].value,3);
@@ -61,7 +68,7 @@ assert.match(nodes['#source-preview'].textContent,/10분 보강/);
 nodes['#reset-confirm'].onclick();
 assert.equal(vm.runInContext("data[key('이광한',1,'7:40')].attendance",ui),'scheduled');
 assert.ok(Object.keys(storage).length);
-console.log('PASS: UI initialization, coach switching, source details, attendance independent of planned session, browser storage and reset handlers.');
+console.log('PASS: calendar/table switching, coach switching, source details, attendance independent of planned session, browser storage and reset handlers.');
 for(const [date,column] of [['2026-11-11',3],['2026-11-12',4],['2026-11-16',-1],['2027-11-12',-1]]){
  ui.window.RallyDate.key=()=>date;
  vm.runInContext('render()',ui);

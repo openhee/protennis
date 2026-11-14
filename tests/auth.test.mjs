@@ -130,5 +130,6 @@ test('repeated failed attempts are rate limited', async () => {
 });
 test('Vercel serves protected content through auth handler', async () => {
   const cfg = JSON.parse(await readFile('vercel.json', 'utf8')); assert.equal(cfg.outputDirectory, 'public');
+  assert.deepEqual(cfg.regions, ['sin1']);
   assert.deepEqual(cfg.rewrites, [{ source: '/(.*)', destination: '/api/app' }]); assert.ok(!cfg.functions['api/app.mjs'].includeFiles.includes('coach-data.js'));
 });

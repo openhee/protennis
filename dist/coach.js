@@ -21,16 +21,27 @@ function initialSchedule(){
  return data;
 }
 const $=s=>document.querySelector(s);
-let data=initialSchedule(),coach=COACHES.includes(window.RALLY_COACH_NAME)?window.RALLY_COACH_NAME:COACHES[0],active=null,toastTimer;
+let data=initialSchedule(),coach=COACHES.includes(window.RALLY_COACH_NAME)?window.RALLY_COACH_NAME:COACHES[0],active=null,toastTimer,view='calendar';
 $('#coach-select').value=coach;
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&Object.keys(data).every(k=>saved[k]&&['unknown','open','blocked','lesson','record'].includes(saved[k].kind)))data=saved;}catch{}
+try{if(localStorage.getItem(STORAGE_KEY+':view')==='table')view='table';}catch{}
 function notify(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,3300)}
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));$('#save-status').textContent='이 브라우저에 저장됨 · 실제 예약 및 알림 없음';return true}catch{$('#save-status').textContent='저장 공간 사용 불가 · 새로고침 시 변경이 사라집니다';return false}}
 function element(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el}
+function renderCalendar(today){
+ const root=$('#calendar-view');root.replaceChildren();
+ DAYS.forEach((day,dayIndex)=>{const date=`2026-11-${String(9+dayIndex).padStart(2,'0')}`,article=element('article',`calendar-day${today===date?' today':''}`),head=element('div','calendar-day-head');head.append(element('span','',day+'요일'),element('strong','',String(9+dayIndex)));article.append(head);const events=element('div','calendar-events');
+  const visible=TIMES.map(time=>({time,slot:data[key(coach,dayIndex,time)]})).filter(({slot})=>['lesson','open','record'].includes(slot.kind));
+  for(const {time,slot} of visible){const button=element('button',`calendar-event ${slot.kind} ${slot.kind==='lesson'?slot.attendance:''}`);button.type='button';let title,meta;if(slot.kind==='lesson'){title=slot.name;meta=`${slot.session}/${slot.total}회차 · ${slot.attendance==='attended'?'출석 완료':slot.attendance==='absent'?'불참':'레슨 예정'}`;}else if(slot.kind==='open'){title='예약 가능';meta='레슨생 예약 가능 시간';}else{title=slot.raw;meta='원문 확인 필요';}button.append(element('span','calendar-event-time',time),element('span','calendar-event-title',title),element('span','calendar-event-meta',meta));button.setAttribute('aria-label',`${day}요일 ${time} ${title} ${meta}`);button.onclick=()=>edit(dayIndex,time);events.append(button);}
+  if(!visible.length)events.append(element('p','calendar-empty','표시할 레슨 일정이 없습니다.'));
+  article.append(events);const blocked=TIMES.filter(time=>data[key(coach,dayIndex,time)].kind==='blocked').length;if(blocked)article.append(element('div','calendar-day-foot',`예약 불가 ${blocked}칸`));root.append(article);
+ });
+}
+function setView(next,persist=true){view=next==='table'?'table':'calendar';$('#calendar-view').hidden=view!=='calendar';$('#table-view').hidden=view!=='table';$('#view-calendar').setAttribute('aria-pressed',String(view==='calendar'));$('#view-table').setAttribute('aria-pressed',String(view==='table'));$('#view-description').textContent=view==='calendar'?'레슨과 예약 가능한 시간만 날짜별로 표시':'표시 범위 06:00–21:40 · 원본 시간 행 48개';if(persist)try{localStorage.setItem(STORAGE_KEY+':view',view)}catch{}}
 function render(){
  const today=window.RallyDate.key();
  $('#current-date').textContent=`오늘 ${window.RallyDate.label()} · 한국 시간${today<'2026-11-09'||today>'2026-11-15'?' · 현재 표는 11월 2주차 시연입니다.':''}`;
- const table=$('#timetable');table.replaceChildren();const head=element('thead'),hr=element('tr');hr.append(element('th','','시간'));
+ renderCalendar(today);const table=$('#timetable');table.replaceChildren();const head=element('thead'),hr=element('tr');hr.append(element('th','','시간'));
  DAYS.forEach((name,i)=>{const isToday=today===`2026-11-${String(9+i).padStart(2,'0')}`;const th=element('th',isToday?'today-head':'',name);th.scope='col';if(isToday)th.setAttribute('aria-current','date');th.append(element('strong','',String(9+i)));hr.append(th)});head.append(hr);table.append(head);const body=element('tbody');
  TIMES.forEach(time=>{const row=element('tr');row.append(element('td','',time));DAYS.forEach((day,i)=>{const td=element('td'),id=key(coach,i,time),slot=data[id];const b=element('button',`slot ${slot.kind} ${slot.kind==='lesson'?slot.attendance:''}`);b.type='button';
  if(slot.kind==='lesson'){b.append(element('span','slot-name',slot.name),element('span','session',`${slot.session}/${slot.total}`),element('small','',slot.attendance==='attended'?'✓ 출석 완료':slot.attendance==='absent'?'불참':'20분 · 레슨 예정'));}
@@ -48,6 +59,7 @@ $('#kind').onchange=toggleFields;
 $('#slot-form').onsubmit=e=>{e.preventDefault();if(!active)return;const kind=$('#kind').value;const previous=data[active.id];const slot={kind,memo:$('#memo').value.trim(),raw:previous.raw,sourceCell:previous.sourceCell,sourceRed:previous.sourceRed};if(kind==='record'&&!slot.raw?.trim()){$('#form-error').textContent='원문이 없는 시간입니다. 다른 상태를 선택하세요.';return}if(kind==='lesson'){const name=$('#student-name').value.trim(),session=Number($('#session').value),total=Number($('#total').value);if(!name||!Number.isInteger(session)||!Number.isInteger(total)||session<1||total<session||total>100){$('#form-error').textContent='이름과 회차를 확인하세요. 예정 회차는 전체 회차 이하여야 합니다.';return}Object.assign(slot,{name,session,total,attendance:$('#attendance').value})}data[active.id]=slot;const persisted=save();render();$('#editor').close();notify(persisted?'시연 일정이 저장되었습니다. 원본 시트에는 반영되지 않습니다.':'이번 화면에 반영했습니다. 새로고침 시 변경이 사라질 수 있습니다.')};
 for(const id of ['close','cancel'])$('#'+id).onclick=()=>$('#editor').close();
 $('#coach-select').onchange=e=>{coach=e.target.value;render()};
+$('#view-calendar').onclick=()=>setView('calendar');$('#view-table').onclick=()=>setView('table');setView(view,false);
 $('#reset').onclick=()=>$('#reset-dialog').showModal();$('#reset-cancel').onclick=()=>$('#reset-dialog').close();$('#reset-confirm').onclick=()=>{data=initialSchedule();save();render();$('#reset-dialog').close();notify('읽어온 11월 2주차 기록으로 초기화했습니다.')};
 render();
 window.RallyDate.watch(render);
