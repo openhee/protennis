@@ -128,6 +128,7 @@ export async function handle(request, env = process.env, transport = fetch) {
     const studentResource = file === 'index.html';
     if (!coachResource && !studentResource) return response('Not found', 404);
     if ((coachResource && account.role !== 'coach') || (studentResource && account.role !== 'student')) return response('접근 권한이 없습니다. 본인 역할의 화면을 이용해 주세요.', 403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    if (studentResource) return redirect('/booking.html');
     const result = await serve(file, account);
     return request.method === 'HEAD' ? new Response(null, { status: result.status, headers: result.headers }) : result;
   }

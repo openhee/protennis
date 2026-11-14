@@ -97,8 +97,10 @@ test('coach accesses only coach resources; secure cookies and minimal session re
   assert.deepEqual(await session.json(), { name: '테스트 계정', role: 'coach', home: '/coach.html', storageId: 'member-id' }); assert.equal(b.state.userChecks, 0);
 });
 test('student cannot escalate with posted role or editable metadata', async () => {
-  const b = backend({ role: 'student' }); const { cookie, res } = await login(b, { role: 'coach' }); assert.equal((await res.json()).redirect, '/index.html');
-  assert.equal((await b.run('/index.html', { cookie })).status, 200);
+  const b = backend({ role: 'student' }); const { cookie, res } = await login(b, { role: 'coach' }); assert.equal((await res.json()).redirect, '/booking.html');
+  const legacy=await b.run('/index.html',{cookie});assert.equal(legacy.status,303);assert.equal(legacy.headers.get('location'),'/booking.html');
+  assert.equal((await b.run('/',{cookie})).headers.get('location'),'/booking.html');
+  const actual=await b.run('/booking.html',{cookie});assert.equal(actual.status,200);assert.doesNotMatch(await actual.text(),/지우|김민준|6\s*\/\s*8/);
   assert.equal((await b.run('/coach.html', { cookie })).status, 403);
   for (const path of ['/coach.js', '/coach-data.sample.js']) assert.equal((await b.run(path, { cookie })).status, 200);
 });
