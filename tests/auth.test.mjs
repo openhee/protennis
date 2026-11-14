@@ -46,6 +46,18 @@ function backend(options = {}) {
       if (u.pathname === '/rest/v1/rpc/booking_dashboard') return reply({ passes: [], entries: [], bookings: [], products: [] });
       if (u.pathname === '/rest/v1/rpc/booking_action') return reply({ id: 'booking-id' });
       if (u.pathname === '/rest/v1/rpc/open_lesson_range') return reply({ count: 3 });
+      if (u.pathname === '/rest/v1/rpc/coach_calendar') return reply({coaches:[],entries:[],bookings:[]});
+      if (u.pathname === '/rest/v1/passes') {
+        assert.equal(u.searchParams.get('member_id'), 'eq.member-id');
+        assert.equal(u.searchParams.get('branch_id'), 'eq.branch-id');
+        return reply([]);
+      }
+      if (u.pathname === '/rest/v1/schedule_entries') {
+        assert.equal(u.searchParams.get('bookings.member_id'), 'eq.member-id');
+        assert.equal(u.searchParams.get('branch_id'), 'eq.branch-id');
+        assert.match(u.searchParams.get('select'), /bookings!inner/);
+        return reply([]);
+      }
       if (u.pathname.endsWith('/members')) {
         assert.equal(u.searchParams.get('auth_user_id'), 'eq.' + user.id); assert.equal(u.searchParams.get('status'), 'eq.active');
         return reply(state.assigned && state.memberActive ? [{ id: 'member-id', branch_id: 'branch-id', display_name: '테스트 계정', role: state.role, status: 'active' }] : []);
@@ -101,12 +113,31 @@ test('coach accesses only coach resources; secure cookies and minimal session re
   assert.deepEqual(await session.json(), { name: '테스트 계정', role: 'coach', home: '/coach.html', storageId: 'member-id' }); assert.equal(b.state.userChecks, 0);
 });
 test('student cannot escalate with posted role or editable metadata', async () => {
-  const b = backend({ role: 'student' }); const { cookie, res } = await login(b, { role: 'coach' }); assert.equal((await res.json()).redirect, '/booking.html');
-  const legacy=await b.run('/index.html',{cookie});assert.equal(legacy.status,303);assert.equal(legacy.headers.get('location'),'/booking.html');
-  assert.equal((await b.run('/',{cookie})).headers.get('location'),'/booking.html');
+  const b = backend({ role: 'student' }); const { cookie, res } = await login(b, { role: 'coach' }); assert.equal((await res.json()).redirect, '/index.html');
+  const legacy=await b.run('/index.html',{cookie});assert.equal(legacy.status,200);assert.doesNotMatch(await legacy.text(),/지우|김민준|시연|샘플 데이터/);
+  assert.equal((await b.run('/',{cookie})).headers.get('location'),'/index.html');
   const actual=await b.run('/booking.html',{cookie});assert.equal(actual.status,200);assert.doesNotMatch(await actual.text(),/지우|김민준|6\s*\/\s*8/);
   assert.equal((await b.run('/coach.html', { cookie })).status, 403);
   for (const path of ['/coach.js', '/coach-data.sample.js']) assert.equal((await b.run(path, { cookie })).status, 200);
+});
+test('student calendar endpoint validates dates and restricts access to own account',async()=>{
+ const student=backend({role:'student'}),coach=backend();
+ const {cookie}=await login(student),{cookie:coachCookie}=await login(coach);
+ const path='/api/student-dashboard?week=2026-11-16&month=2026-11';
+ assert.equal((await student.run(path)).status,401);
+ assert.equal((await coach.run(path,{cookie:coachCookie})).status,403);
+ assert.equal((await student.run('/api/student-dashboard?week=2026-11-17&month=2026-11',{cookie})).status,200);
+ assert.equal((await student.run('/api/student-dashboard?week=2026-11-31&month=2026-11',{cookie})).status,400);
+ assert.equal((await student.run('/api/student-dashboard?week=2026-11-16&month=2026-13',{cookie})).status,400);
+ const response=await student.run(path,{cookie});assert.equal(response.status,200);
+ const value=await response.json();assert.deepEqual(value.calendar,[]);assert.equal(value.next,null);
+});
+test('coach shared calendar rejects student access and invalid coach IDs',async()=>{
+ const coach=backend(),student=backend({role:'student'});
+ const {cookie}=await login(coach),{cookie:studentCookie}=await login(student);
+ assert.equal((await coach.run('/api/coach-calendar?day=2026-11-16',{cookie})).status,200);
+ assert.equal((await student.run('/api/coach-calendar?day=2026-11-16',{cookie:studentCookie})).status,403);
+ assert.equal((await coach.run('/api/coach-calendar?day=2026-11-16&coach=bad',{cookie})).status,400);
 });
 test('unassigned, inactive, anonymous and unsupported admin users cannot log in', async () => {
   for (const options of [{ assigned: false }, { memberActive: false }, { coachActive: false }, { anonymous: true }, { role: 'admin' }]) {

@@ -26,6 +26,8 @@ function initialSchedule(){
 const $=s=>document.querySelector(s);
 const liveMode=Boolean(window.RALLY_SESSION);
 let liveRequest=0,rangeDialog=null,dragRange=null,rangeProducts=[];
+let liveSelected='',liveOwn=true,liveLastLoaded=0;
+const liveCache=new Map(),liveInflight=new Map();
 let data=initialSchedule(),coach=COACHES.includes(window.RALLY_COACH_NAME)?window.RALLY_COACH_NAME:COACHES[0],active=null,toastTimer,view='calendar';
 $('#coach-select').value=coach;
 try{const saved=JSON.parse(localStorage.getItem(weekKey()));if(saved&&Object.keys(data).every(k=>saved[k]&&['unknown','open','blocked','lesson','record'].includes(saved[k].kind)))data=saved;}catch{}
@@ -65,7 +67,7 @@ function edit(day,time){active={id:key(coach,day,time),day,time};const slot=data
 $('#kind').onchange=toggleFields;
 $('#slot-form').onsubmit=e=>{e.preventDefault();if(!active)return;const kind=$('#kind').value;const previous=data[active.id];const slot={kind,memo:$('#memo').value.trim(),raw:previous.raw,sourceCell:previous.sourceCell,sourceRed:previous.sourceRed};if(kind==='record'&&!slot.raw?.trim()){$('#form-error').textContent='원문이 없는 시간입니다. 다른 상태를 선택하세요.';return}if(kind==='lesson'){const name=$('#student-name').value.trim(),session=Number($('#session').value),total=Number($('#total').value);if(!name||!Number.isInteger(session)||!Number.isInteger(total)||session<1||total<session||total>100){$('#form-error').textContent='이름과 회차를 확인하세요. 예정 회차는 전체 회차 이하여야 합니다.';return}Object.assign(slot,{name,session,total,attendance:$('#attendance').value})}data[active.id]=slot;const persisted=save();render();$('#editor').close();notify(persisted?'시연 일정이 저장되었습니다. 원본 시트에는 반영되지 않습니다.':'이번 화면에 반영했습니다. 새로고침 시 변경이 사라질 수 있습니다.')};
 for(const id of ['close','cancel'])$('#'+id).onclick=()=>$('#editor').close();
-$('#coach-select').onchange=e=>{coach=e.target.value;render()};
+$('#coach-select').onchange=e=>{if(liveMode){liveSelected=e.target.value;refreshLiveCalendar();return;}coach=e.target.value;render()};
 $('#view-calendar').onclick=()=>setView('calendar');$('#view-table').onclick=()=>setView('table');setView(view,false);
 $('#reset').onclick=()=>$('#reset-dialog').showModal();$('#reset-cancel').onclick=()=>$('#reset-dialog').close();$('#reset-confirm').onclick=()=>{data=initialSchedule();save();render();$('#reset-dialog').close();notify('읽어온 11월 2주차 기록으로 초기화했습니다.')};
 function changeWeek(date){
@@ -141,41 +143,49 @@ function liveCard(e){
  $('#member-card-content').replaceChildren(details,element('p','member-card-note','실제 등록된 일정입니다. 수강권 상세·출석 수정은 연결 준비 중입니다.'));
  $('#member-card-edit').hidden=true;$('#member-card').showModal();
 }
-async function refreshLiveCalendar(){
+async function refreshLiveCalendar(force=false){
  if(rangeDialog?.open||dragRange)return;
- const request=++liveRequest,week=weekStart,today=window.RallyDate.key();
+ const request=++liveRequest,week=weekStart,today=window.RallyDate.key(),key=week+':'+liveSelected;
  if(window.renderWeekNavigation)window.renderWeekNavigation(week,today);
  $('#current-date').textContent='오늘 '+window.RallyDate.label()+' · 한국 시간';
- $('#calendar-view').replaceChildren(element('p','calendar-empty','실제 일정을 불러오는 중…'));$('#timetable').replaceChildren();
+ $('#calendar-view').inert=true;$('#timetable').inert=true;
  $('#save-status').textContent='DB 일정 조회 중';
- for(const id of ['total','attended','absent','open'])$('#stat-'+id).textContent='—';
+
  $('#review-count').textContent='';
  try{
-  const response=await fetch('/api/booking-dashboard?day='+week,{cache:'no-store'});
-  if(response.status===401){location.replace('/login.html');return;}
-  if(!response.ok)throw Error();const payload=await response.json();if(request!==liveRequest)return;
+  let payload;const cached=liveCache.get(key);
+  if(!force&&cached&&Date.now()-cached.at<60000)payload=cached.value;
+  else {
+   if(!liveInflight.has(key))liveInflight.set(key,(async()=>{const response=await fetch('/api/coach-calendar?day='+week+(liveSelected?'&coach='+liveSelected:''),{cache:'no-store'});if(response.status===401){location.replace('/login.html');throw Error();}if(!response.ok)throw Error();return response.json();})().finally(()=>liveInflight.delete(key)));
+   payload=await liveInflight.get(key);liveCache.set(key,{value:payload,at:Date.now()});
+  }
+  if(request!==liveRequest)return;
+  liveLastLoaded=Date.now();liveOwn=!payload.actor_id||payload.actor_id===payload.selected_coach_id;
+  if(payload.coaches){const select=$('#coach-select');select.replaceChildren();for(const c of payload.coaches){const option=element('option','',c.name+(c.id===payload.actor_id?' (내 일정)':''));option.value=c.id;select.append(option);}select.value=payload.selected_coach_id;select.disabled=false;}
+  const addButton=document.getElementById('open-range-button');if(addButton)addButton.hidden=!liveOwn;
+  $('#calendar-view').inert=false;$('#timetable').inert=false;
   rangeProducts=payload.products||[];
   const items=liveItems(payload),root=$('#calendar-view');root.replaceChildren();
   const buttonFor=e=>{const b=element('button','calendar-event '+(e.type==='blocked'?'blocked':e.people.length?'lesson':'open'));b.type='button';b.append(element('span','calendar-event-time',e.time+' – '+koreaParts(e.end).time),element('span','calendar-event-title',liveLabel(e)));b.setAttribute('aria-label',e.date+' '+e.time+' '+liveLabel(e));b.onclick=()=>liveCard(e);return b;};
   DAYS.forEach((day,i)=>{const date=dateAt(i),article=element('article','calendar-day'+(date===today?' today':'')),head=element('div','calendar-day-head');head.append(element('span','',day+'요일'),element('strong','',String(Number(date.slice(-2)))));article.append(head);const events=element('div','calendar-events'),entries=items.filter(e=>e.date===date);for(const e of entries)events.append(buttonFor(e));if(!entries.length)events.append(element('p','calendar-empty','등록된 일정 없음'));article.append(events);root.append(article);});
-  const table=$('#timetable'),thead=element('thead'),head=element('tr');head.append(element('th','','시간'));DAYS.forEach((d,i)=>{const th=element('th',dateAt(i)===today?'today-head':'',d+' '+Number(dateAt(i).slice(-2)));th.scope='col';head.append(th);});thead.append(head);table.append(thead);
+  const table=$('#timetable'),thead=element('thead'),head=element('tr');table.replaceChildren();head.append(element('th','','시간'));DAYS.forEach((d,i)=>{const th=element('th',dateAt(i)===today?'today-head':'',d+' '+Number(dateAt(i).slice(-2)));th.scope='col';head.append(th);});thead.append(head);table.append(thead);
   const times=[...new Set([...TIMES.map(t=>t.padStart(5,'0')),...items.map(e=>e.time)])].sort(),body=element('tbody');
-  for(const time of times){const row=element('tr');row.append(element('td','',time));DAYS.forEach((d,i)=>{const cell=element('td'),entries=items.filter(e=>e.date===dateAt(i)&&e.time===time);entries.forEach(e=>cell.append(buttonFor(e)));if(!entries.length){const b=element('button','slot unknown','+ 시간 등록');b.type='button';b.setAttribute('aria-label',dateAt(i)+' '+time+' 시간 등록 화면 열기');b.dataset.day=dateAt(i);b.dataset.time=time;b.onclick=()=>openRange(dateAt(i),time,time);b.onpointerdown=event=>{if(event.button!==0||event.pointerType==='touch')return;event.preventDefault();b.focus();dragRange={date:b.dataset.day,start:time,end:time};paintRange();};b.onpointerenter=()=>{if(dragRange&&dragRange.date===b.dataset.day){dragRange.end=time;paintRange();}};cell.append(b);}row.append(cell);});body.append(row);}table.append(body);
+  for(const time of times){const row=element('tr');row.append(element('td','',time));DAYS.forEach((d,i)=>{const cell=element('td'),entries=items.filter(e=>e.date===dateAt(i)&&e.time===time);entries.forEach(e=>cell.append(buttonFor(e)));if(!entries.length&&liveOwn){const b=element('button','slot unknown','+ 시간 등록');b.type='button';b.setAttribute('aria-label',dateAt(i)+' '+time+' 시간 등록 화면 열기');b.dataset.day=dateAt(i);b.dataset.time=time;b.onclick=()=>openRange(dateAt(i),time,time);b.onpointerdown=event=>{if(event.button!==0||event.pointerType==='touch')return;event.preventDefault();b.focus();dragRange={date:b.dataset.day,start:time,end:time};paintRange();};b.onpointerenter=()=>{if(dragRange&&dragRange.date===b.dataset.day){dragRange.end=time;paintRange();}};cell.append(b);}row.append(cell);});body.append(row);}table.append(body);
   const bookings=payload.bookings.filter(b=>b.status==='confirmed');
   for(const [id,count] of [['total',bookings.length],['attended',bookings.filter(b=>b.attendance==='present').length],['absent',bookings.filter(b=>['absent','no_show'].includes(b.attendance)).length],['open',items.filter(e=>e.type==='lesson'&&e.status==='open'&&!e.full&&Date.parse(e.start)>Date.now()).length]])$('#stat-'+id).replaceChildren(document.createTextNode(String(count)),element('small','',id==='open'?'칸':'건'));
-  $('#review-count').textContent='실제 DB 일정 · '+items.length+'건';$('#view-description').textContent='한국 시간 · 일정 시작 시각에 표시';
+  $('#review-count').textContent='실제 DB 일정 · '+items.length+'건';$('#view-description').textContent=liveOwn?'한국 시간 · 내 일정':'공유 일정 · 조회 전용';
   $('#save-status').textContent='갱신 완료 · '+new Date().toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'});
- }catch(error){if(request!==liveRequest)return;$('#calendar-view').replaceChildren(element('p','calendar-empty','일정을 불러오지 못했습니다. 일정 새로고침을 눌러주세요.'));$('#save-status').textContent='조회 실패 · 재시도 필요';}
+ }catch(error){if(request!==liveRequest)return;$('#calendar-view').replaceChildren(element('p','calendar-empty','일정을 불러오지 못했습니다. 주간 또는 코치를 다시 선택해 주세요.'));$('#save-status').textContent='조회 실패 · 재시도 필요';}
 }
 if(liveMode){
- $('#coach-select').replaceChildren(element('option','',window.RALLY_SESSION.name));$('#coach-select').disabled=true;
+ $('#coach-select').replaceChildren(element('option','',window.RALLY_SESSION.name));$('#coach-select').disabled=false;
  installRangeEditor();
- $('#reset').textContent='일정 새로고침';$('#reset').onclick=()=>refreshLiveCalendar();
- document.querySelector('.source-note p').textContent='로그인한 코치의 실제 일정입니다. 30초마다, 그리고 이 화면으로 돌아오면 자동으로 갱신됩니다.';
- document.querySelector('.sidebar-bottom').textContent='실제 DB 연결 · 내 일정';
+ $('#reset').hidden=true;
+ document.querySelector('.source-note p').textContent='같은 지점 코치의 일정을 조회할 수 있습니다. 일정 등록은 본인 일정에서 가능합니다.';
+ document.querySelector('.sidebar-bottom').textContent='실제 DB 연결 · 코치 공유 일정';
  document.querySelector('.coupon-section').hidden=true;document.querySelector('.bottom-notes').hidden=true;
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLiveCalendar();});
- window.addEventListener('pageshow',()=>refreshLiveCalendar());window.setInterval(()=>{if(!document.hidden)refreshLiveCalendar();},30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-liveLastLoaded>60000)refreshLiveCalendar();});
+ window.addEventListener('pageshow',event=>{if(event.persisted&&Date.now()-liveLastLoaded>60000)refreshLiveCalendar();});
 }
 
 function minuteValue(time){const [h,m]=time.split(':').map(Number);return h*60+m;}
@@ -190,7 +200,7 @@ function paintRange(){
  });
 }
 function openRange(date,first,last){
- if(!rangeDialog||rangeDialog.open)return;
+ if(!liveOwn||!rangeDialog||rangeDialog.open)return;
  const bounds=rangeBounds(date,first,last);
  document.getElementById('range-start').value=bounds.start;document.getElementById('range-end').value=bounds.end;
  const product=document.getElementById('range-product');product.replaceChildren();
@@ -218,10 +228,10 @@ function installRangeEditor(){
   try{
    const response=await fetch('/api/booking-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,payload:{starts_at:document.getElementById('range-start').value+':00+09:00',ends_at:document.getElementById('range-end').value+':00+09:00',product_id:product}})});
    const result=await response.json();if(!response.ok)throw Error(result.error||'저장하지 못했습니다.');
-   rangeDialog.close();await refreshLiveCalendar();notify(action==='bulk-open'?result.count+'개의 레슨 시간을 열었습니다.':'예약 불가 시간을 등록했습니다.');
+   rangeDialog.close();liveCache.clear();await refreshLiveCalendar(true);notify(action==='bulk-open'?result.count+'개의 레슨 시간을 열었습니다.':'예약 불가 시간을 등록했습니다.');
   }catch(error){document.getElementById('range-error').textContent=error.message;}finally{saveButton.disabled=false;}
  };
- const add=element('button','button','예약 시간 열기');add.type='button';add.onclick=()=>openRange(weekStart,'18:00','18:40');document.querySelector('.heading').append(add);
+ const add=element('button','button','예약 시간 열기');add.type='button';add.id='open-range-button';add.onclick=()=>openRange(weekStart,'18:00','18:40');document.querySelector('.heading').append(add);
  const hint=element('p','range-hint','상세 시간표에서 같은 요일의 빈 시간을 드래그하면 20분씩 한 번에 열 수 있어요. 휴대폰에서는 빈 칸을 누른 뒤 종료 시간을 선택하세요.');
  document.querySelector('.toolbar').after(hint);
  window.addEventListener('pointerup',()=>{if(!dragRange)return;const range=dragRange;dragRange=null;paintRange();openRange(range.date,range.start,range.end);});

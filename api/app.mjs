@@ -92,6 +92,25 @@ export async function handle(request, env = process.env, transport = fetch) {
       return json({ redirect: homeFor(user) });
     }
     const account = await auth.account();
+    if (path === '/api/coach-calendar' && request.method === 'GET') {
+      if (!account) return json({error:'로그인이 필요합니다.'},401);
+      if (account.role !== 'coach') return json({error:'코치 권한이 필요합니다.'},403);
+      const params=new URL(request.url).searchParams,day=params.get('day'),selected=params.get('coach');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'') || !Number.isFinite(Date.parse(day)) || new Date(day).toISOString().slice(0,10)!==day || (selected&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected)))return json({error:'조회 조건을 확인하세요.'},400);
+      const result=await auth.bookingRpc('coach_calendar',{day,selected_coach:selected||null});
+      return result.error?json({error:'코치 일정을 조회하지 못했습니다.'},503):json(result.data);
+    }
+    if (path === '/api/student-dashboard' && request.method === 'GET') {
+      if (!account) return json({ error: '로그인이 필요합니다.' }, 401);
+      if (account.role !== 'student') return json({ error: '레슨생만 접근할 수 있습니다.' }, 403);
+      const params = new URL(request.url).searchParams;
+      const week = params.get('week'), month = params.get('month');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(week || '') || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '') ||
+          !Number.isFinite(Date.parse(week)) || new Date(week).toISOString().slice(0, 10) !== week) return json({ error: '조회 날짜를 확인하세요.' }, 400);
+      const scope = params.get('scope') || 'all';
+      if (!['all','month','week'].includes(scope)) return json({error:'조회 범위를 확인하세요.'},400);
+      return json(await auth.studentDashboard(account, week, month, scope));
+    }
     if (path === '/api/booking-dashboard' && request.method === 'GET') {
       if (!account) return json({error:'로그인이 필요합니다.'},401);
       const day=new URL(request.url).searchParams.get('day');
@@ -122,13 +141,12 @@ export async function handle(request, env = process.env, transport = fetch) {
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: '허용하지 않는 요청입니다.' }, 405);
     if (!account) return redirect('/login.html');
     if (path === '/') return redirect(homeFor(account));
-    if(path==='/booking.html')return account.role==='coach'?redirect('/coach.html'):serve('booking.html',account);
+    if(path==='/booking.html')return account.role==='coach'?redirect('/coach.html'):serve('index.html',account);
     const file = path.slice(1);
     const coachResource = file === 'coach.html' || file === 'member.html';
     const studentResource = file === 'index.html';
     if (!coachResource && !studentResource) return response('Not found', 404);
     if ((coachResource && account.role !== 'coach') || (studentResource && account.role !== 'student')) return response('접근 권한이 없습니다. 본인 역할의 화면을 이용해 주세요.', 403, { 'Content-Type': 'text/plain; charset=utf-8' });
-    if (studentResource) return redirect('/booking.html');
     const result = await serve(file, account);
     return request.method === 'HEAD' ? new Response(null, { status: result.status, headers: result.headers }) : result;
   }

@@ -98,7 +98,8 @@ assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:00','19:40').count",u
 assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:40','19:00').end",ui),'2026-11-17T20:00');
 assert.equal(vm.runInContext("rangeBounds('2026-11-17','19:00','19:00').count",ui),1);
 ui.liveFixture={entries:[{id:'entry-1',start:'2026-11-17T10:00:00Z',end:'2026-11-17T10:20:00Z',type:'lesson',status:'open',coach:'신홍경',full:true}],bookings:[{id:'booking-1',start:'2026-11-17T10:00:00Z',member:'신희찬',status:'confirmed',attendance:'pending'}]};
-ui.fetch=async()=>({ok:true,status:200,json:async()=>ui.liveFixture});
+ui.document.getElementById=id=>nodes['#'+id]||null;
+let liveFetches=0;ui.fetch=async()=>{liveFetches++;return {ok:true,status:200,json:async()=>ui.liveFixture};};
 vm.runInContext("weekStart='2026-11-16'",ui);
 (async()=>{
  await vm.runInContext('refreshLiveCalendar()',ui);
@@ -108,7 +109,12 @@ vm.runInContext("weekStart='2026-11-16'",ui);
  assert.equal(event.children[1].textContent,'신희찬');
  event.onclick();assert.equal(nodes['#member-card-title'].textContent,'신희찬');
  assert.equal(nodes['#stat-total'].children[0].textContent,'1');
- ui.liveFixture={entries:[],bookings:[]};await vm.runInContext('refreshLiveCalendar()',ui);
+ await vm.runInContext('refreshLiveCalendar()',ui);assert.equal(liveFetches,1);
+ ui.liveFixture={...ui.liveFixture,actor_id:'self',selected_coach_id:'other',coaches:[{id:'self',name:'본인'},{id:'other',name:'다른 코치'}]};
+ await vm.runInContext('refreshLiveCalendar(true)',ui);assert.equal(vm.runInContext('liveOwn',ui),false);
+ assert.equal(nodes['#coach-select'].disabled,false);
+ assert.equal(nodes['#timetable'].children[1].children[0].children[1].children.length,0);
+ ui.liveFixture={entries:[],bookings:[]};await vm.runInContext('refreshLiveCalendar(true)',ui);
  assert.equal(nodes['#calendar-view'].children[1].children[1].children[0].textContent,'등록된 일정 없음');
  console.log('PASS: live API renders Korean-time bookings, member cards, counts and empty state.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

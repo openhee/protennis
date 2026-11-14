@@ -679,358 +679,122 @@
       }
     </style>
   </head>
-  <body>
-    <header>
-      <div class="brand">
-        <span class="ball">◜</span>랠리<small>RALLY</small>
-      </div>
-      <nav aria-label="주 메뉴">
-        <button class="active" data-page="home">내 레슨</button
-        ><button data-page="reserve">레슨 예약</button>
-      </nav>
-      <div class="profile">
-        <button class="role" id="role">코치 화면 ↗</button
-        ><span class="avatar">지</span><span>지우 님</span>
-      </div>
-    </header>
-    <main>
-      <div class="heading">
-        <div>
-          <div class="eyebrow" id="eyebrow">MY TENNIS ROUTINE</div>
-          <h1 id="title">지우 님, 다음 랠리도 함께해요.</h1>
-          <p id="subtitle">시간 걱정 없이, 테니스에만 집중하세요.</p>
-        </div>
-        <div class="today">
-          <span id="today-label"></span>　<span class="demo">11월 2주차 시연</span>
-        </div>
-      </div>
-      <section id="student" class="layout">
-        <div class="left">
-          <article class="hero" id="next">
-            <div class="court" aria-hidden="true"></div>
-            <div class="tennis-ball" aria-hidden="true"></div>
-            <div class="hero-content">
-              <span class="pill">●　시연 레슨</span>
-              <h2 id="next-date">11월 12일 <small>목요일</small></h2>
-              <div class="hero-details" id="next-details">
-                오후 7:00 – 7:20　·　김민준 코치
-              </div>
-              <p style="font-size: 12px; margin-bottom: 22px">
-                그린 테니스장　/　A 코트 · 개인 레슨
-              </p>
-              <button class="btn light" id="change">예약 변경하기　↗</button
-              ><button class="text-btn" id="details">예약 상세</button>
-            </div>
-          </article>
-          <section class="card booking" id="booking">
-            <div class="card-top">
-              <h2>나에게 맞는 시간 찾기</h2>
-              <span class="month">2026. 11</span>
-            </div>
-            <p style="font-size: 12px">김민준 코치　·　개인 레슨 20분</p>
-            <div class="dates" id="dates"></div>
-            <div class="subheading">
-              <strong id="date-label">11월 12일 목요일</strong
-              ><span style="color: #929a86; font-size: 10px"
-                >● 예약 가능　 <span style="color: #bdc1b4">● 마감</span></span
-              >
-            </div>
-            <div class="slots" id="slots"></div>
-            <div class="booking-bottom">
-              <p>
-                레슨 시작 24시간 전까지 변경할 수 있어요.<br />예약은 수강권의
-                남은 횟수 안에서 가능합니다.
-              </p>
-              <button class="btn" id="book">시간을 선택해 주세요</button>
-            </div>
-          </section>
-        </div>
-        <aside class="side">
-          <section class="card subscription">
-            <div class="card-top" style="margin-bottom: 0">
-              <h2>내 수강권</h2>
-              <span class="pill" style="background: #f1f5e8; color: #789354"
-                >이용 중</span
-              >
-            </div>
-            <div class="count">6 <small>/ 8회 남았어요</small></div>
-            <p style="font-size: 12px">조금씩 쌓이는 나만의 테니스 루틴</p>
-            <div class="dots">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-            </div>
-            <div class="info-row">
-              <span>수강권</span><strong>개인 레슨 8회권</strong>
-            </div>
-            <div class="info-row">
-              <span>이용 기간</span><strong>11. 01 – 11. 30</strong>
-            </div>
-          </section>
-          <section class="card routine">
-            <div class="card-top" style="margin-bottom: 4px">
-              <h2>나의 정기 레슨</h2>
-              <span style="color: #849277; font-size: 11px">매주 2회</span>
-            </div>
-            <div class="routine-line">
-              <div class="day-tag">화</div>
-              <div>
-                <strong>오후 7:00 – 7:20</strong>
-                <p>김민준 코치 · A 코트</p>
-              </div>
-              <span class="status">고정 예약</span>
-            </div>
-            <div class="routine-line">
-              <div class="day-tag">목</div>
-              <div>
-                <strong>오후 7:00 – 7:20</strong>
-                <p>김민준 코치 · A 코트</p>
-              </div>
-              <span class="status">고정 예약</span>
-            </div>
-            <p class="note">
-              ↻ 매주 같은 시간에 자동으로 예약돼요.<br />일정이 바뀐 날만 편하게
-              변경하세요.
-            </p>
-          </section>
-          <section class="card notice">
-            <h2>☀　코트에서 전해드려요</h2>
-            <p>
-              우천 시 수업 여부는 레슨 2시간 전에 안내해 드려요. 휴강된 레슨은
-              횟수가 차감되지 않아요.
-            </p>
-            <p style="margin-top: 12px; font-size: 10px; color: #929a84">
-              그린 테니스장 · 11. 09
-            </p>
-          </section>
-        </aside>
-      </section>
-      <section id="coach" class="hidden">
-        <div class="coach-stats">
-          <div class="card">
-            오늘의 레슨<strong
-              >4 <small style="font-size: 13px">건</small></strong
-            >
-          </div>
-          <div class="card">
-            출석 완료<strong id="attended"
-              >0 <small style="font-size: 13px">명</small></strong
-            >
-          </div>
-          <div class="card">
-            남은 레슨<strong id="remaining"
-              >4 <small style="font-size: 13px">건</small></strong
-            >
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-top">
-            <h2>오늘의 레슨 일정</h2>
-            <span class="demo">샘플 일정</span>
-          </div>
-          <div class="agenda" id="agenda"></div>
-        </div>
-      </section>
-      <footer class="footer">
-        <span>RALLY　·　테니스가 일상이 되는 시간</span
-        ><span>샘플 데이터 · 실제 예약은 진행되지 않습니다</span>
-      </footer>
-    </main>
-    <dialog id="dialog">
-      <h2 id="modal-title"></h2>
-      <p id="modal-body"></p>
-      <div class="actions">
-        <button class="btn outline" id="close">닫기</button
-        ><button class="btn" id="confirm">확인</button>
-      </div>
-    </dialog>
-    <div id="toast" class="toast hidden" role="status"></div>
-    <script>
-      const $ = (s) => document.querySelector(s);
-      let selectedDay = 12,
-        selectedTime = null,
-        changing = false,
-        isCoach = false,
-        booking = { day: 12, time: "19:00" },
-        pending = null,
-        attended = 0;
-      const days = ["월", "화", "수", "목", "금", "토", "일"],
-        times = [
-          "18:00",
-          "18:30",
-          "19:00",
-          "19:30",
-          "20:00",
-          "20:30",
-          "21:00",
-          "21:30",
-        ];
-      const dayName = (d) => days[d - 9];
-      function renderDates() {
-        $("#dates").innerHTML = Array.from({ length: 7 }, (_, i) => {
-          let d = 9 + i;
-          return `<button class="date ${selectedDay === d ? "active" : ""}" ${`2026-11-${String(d).padStart(2,'0')}` < window.RallyDate.key() ? "disabled" : ""} aria-pressed="${selectedDay === d}" data-day="${d}"><span>${days[i]}</span><strong>${d}</strong><i></i></button>`;
-        }).join("");
-        document.querySelectorAll("[data-day]").forEach(
-          (b) =>
-            (b.onclick = () => {
-              selectedDay = +b.dataset.day;
-              selectedTime = null;
-              renderDates();
-              renderSlots();
-            }),
-        );
-      }
-      function renderSlots() {
-        $("#date-label").textContent =
-          `11월 ${selectedDay}일 ${dayName(selectedDay)}요일`;
-        $("#slots").innerHTML = times
-          .map((t, i) => {
-            let unavailable =
-              `2026-11-${String(selectedDay).padStart(2,'0')}` < window.RallyDate.key() ||
-              (i + selectedDay) % 5 === 0 ||
-              (booking.day === selectedDay && booking.time === t);
-            return `<button class="slot ${t === selectedTime ? "selected" : ""}" ${unavailable ? "disabled" : ""} aria-pressed="${t === selectedTime}" data-time="${t}" aria-label="${t}${unavailable ? " 예약 마감" : ""}">${t}</button>`;
-          })
-          .join("");
-        document.querySelectorAll("[data-time]").forEach(
-          (b) =>
-            (b.onclick = () => {
-              selectedTime = b.dataset.time;
-              renderSlots();
-            }),
-        );
-        $("#book").disabled = !selectedTime;
-        $("#book").textContent = selectedTime
-          ? `${selectedTime} ${changing ? "변경" : "예약"}하기`
-          : "시간을 선택해 주세요";
-      }
-      function toast(s) {
-        $("#toast").textContent = s;
-        $("#toast").classList.remove("hidden");
-        setTimeout(() => $("#toast").classList.add("hidden"), 3200);
-      }
-      function modal(title, body, fn) {
-        $("#modal-title").textContent = title;
-        $("#modal-body").textContent = body;
-        pending = fn;
-        $("#confirm").classList.toggle("hidden", !fn);
-        $("#dialog").showModal();
-      }
-      $("#close").onclick = () => $("#dialog").close();
-      $("#confirm").onclick = () => {
-        if (pending) pending();
-        $("#dialog").close();
-      };
-      function switchPage(page) {
-        isCoach = false;
-        $("#coach").classList.add("hidden");
-        $("#student").classList.remove("hidden");
-        $("#role").textContent = "코치 화면 ↗";
-        $("#eyebrow").textContent =
-          page === "home" ? "MY TENNIS ROUTINE" : "FIND YOUR NEXT RALLY";
-        $("#title").textContent =
-          page === "home"
-            ? "지우 님, 다음 랠리도 함께해요."
-            : "코트에서 만날 시간을 골라보세요.";
-        $("#subtitle").textContent =
-          page === "home"
-            ? "시간 걱정 없이, 테니스에만 집중하세요."
-            : "나의 일정에 맞는 시간으로 간편하게 예약하세요.";
-        document
-          .querySelectorAll("nav button")
-          .forEach((b) =>
-            b.classList.toggle("active", b.dataset.page === page),
-          );
-        $("#next").classList.toggle("hidden", page === "reserve");
-        $("#booking").style.marginTop = page === "reserve" ? "0" : "24px";
-      }
-      document
-        .querySelectorAll("[data-page]")
-        .forEach((b) => (b.onclick = () => switchPage(b.dataset.page)));
-      $("#change").onclick = () => {
-        changing = true;
-        switchPage("reserve");
-        toast("변경할 날짜와 시간을 선택해 주세요.");
-      };
-      $("#details").onclick = () =>
-        modal(
-          "내 예약 상세",
-          `11월 ${booking.day}일 ${dayName(booking.day)}요일 ${booking.time} · 개인 레슨 20분 · 김민준 코치 · 그린 테니스장 A 코트. 시작 24시간 전까지 변경 가능합니다.`,
-        );
-      $("#book").onclick = () => {
-        if (!selectedTime) return;
-        let day = selectedDay,
-          time = selectedTime;
-        modal(
-          changing ? "레슨 시간을 변경할까요?" : "이 시간으로 예약할까요?",
-          `11월 ${day}일 ${dayName(day)}요일 ${time} · 김민준 코치 · 20분 개인 레슨${changing ? " (기존 예약을 대체합니다)" : ""}`,
-          () => {
-            booking = { day, time };
-            $("#next-date").innerHTML =
-              `11월 ${day}일 <small>${dayName(day)}요일</small>`;
-            $("#next-details").textContent =
-              `${time} – ${time.split(":")[0]}:${String(+time.split(":")[1] + 20).padStart(2, "0")} · 김민준 코치`;
-            $(".hero .pill").textContent =
-              `●　시연 예약 · ${window.RallyDate.countdown(`2026-11-${String(day).padStart(2,'0')}`)}`;
-            changing = false;
-            selectedTime = null;
-            renderSlots();
-            switchPage("home");
-            toast("샘플 예약이 반영되었어요. 실제 예약은 진행되지 않습니다.");
-          },
-        );
-      };
-      $("#agenda").innerHTML = ["박서연", "이도윤", "정지우", "최하준"]
-        .map(
-          (n, i) =>
-            `<div class="agenda-row"><strong>${18 + Math.floor(i / 2)}:${i % 2 ? "30" : "00"}</strong><div><strong>${n}</strong><p>개인 레슨 20분 · A 코트</p></div><button class="btn outline attendance">출석 체크</button></div>`,
-        )
-        .join("");
-      document.querySelectorAll(".attendance").forEach(
-        (b) =>
-          (b.onclick = () => {
-            let done = b.dataset.done === "true";
-            b.dataset.done = String(!done);
-            attended += done ? -1 : 1;
-            b.textContent = done ? "출석 체크" : "출석 완료 ✓";
-            $("#attended").innerHTML =
-              `${attended} <small style="font-size:13px">명</small>`;
-            $("#remaining").innerHTML =
-              `${4 - attended} <small style="font-size:13px">건</small>`;
-            toast(
-              done ? "샘플 출석이 취소되었어요." : "샘플 출석을 기록했어요.",
-            );
-          }),
-      );
-      $("#role").onclick = () => {
-        if (isCoach) {
-          switchPage("home");
-          return;
-        }
-        isCoach = true;
-        $("#student").classList.add("hidden");
-        $("#coach").classList.remove("hidden");
-        $("#role").textContent = "레슨생 화면 ↗";
-        $("#eyebrow").textContent = "COACH’S DAILY PLAN";
-        $("#title").textContent = "민준 코치님, 오늘의 코트예요.";
-        $("#subtitle").textContent =
-          "11월 2주차 시연 · 레슨과 출석을 한눈에 확인하세요.";
-        document
-          .querySelectorAll("nav button")
-          .forEach((b) => b.classList.remove("active"));
-      };
-      renderDates();
-      renderSlots();
-      function refreshToday() {
-        if (`2026-11-${String(selectedDay).padStart(2,'0')}` < window.RallyDate.key()) selectedTime = null;
-        $("#today-label").textContent = window.RallyDate.label();
-        $(".hero .pill").textContent = `●　시연 레슨 · ${window.RallyDate.countdown(`2026-11-${String(booking.day).padStart(2,'0')}`)}`;
-        renderDates();
-        renderSlots();
-      }
-      refreshToday();
-      window.RallyDate.watch(refreshToday);
-      // Dedicated weekly coach demo. Student prototype remains available here.
-      $("#role").onclick = () => { window.location.href = "coach.html"; };
-    </script>
-  </body>
-</html>
+<body>
+<header><div class="brand"><span class="ball">◜</span>랠리<small>RALLY</small></div><nav aria-label="주 메뉴"><button id="home-tab">내 레슨</button><button id="reserve-tab">레슨 예약</button></nav><div class="profile"><span id="name"></span><button class="btn outline" id="logout">로그아웃</button></div></header>
+<main><div class="heading"><div><div class="eyebrow">MY TENNIS ROUTINE</div><h1 id="title">내 레슨</h1><p id="subtitle">나의 테니스 일정을 한눈에 확인하세요.</p></div><button id="reload" class="btn outline">새로고침</button></div>
+<p id="message" role="status"></p><div id="success" hidden role="status"><span id="success-text"></span><button id="view-booking" class="btn">내 일정 보기</button></div>
+<section id="home-view">
+<article class="hero compact"><div class="court" aria-hidden="true"></div><div class="hero-content"><span class="pill">가장 가까운 레슨</span><h2 id="next-date">불러오는 중</h2><p id="next-details"></p><button id="next-detail" class="btn light" hidden>예약 상세</button></div></article>
+<div class="student-layout"><section class="card"><div class="card-top"><h2>내 레슨 캘린더</h2><div class="tools"><button id="month-prev" aria-label="이전 달">←</button><strong id="month-label"></strong><button id="month-next" aria-label="다음 달">→</button><button id="month-today">이번 달</button></div></div>
+<p class="note">예약된 날짜를 선택하면 아래에서 상세 일정을 확인할 수 있어요.</p><div class="month-grid" id="month-days"></div><h3 id="selected-date"></h3><div id="day-lessons"></div>
+<details><summary>이번 달 전체 예약 · 지난 레슨</summary><div id="month-list"></div></details></section>
+<aside><section class="card"><h2>내 수강권</h2><div id="passes">불러오는 중</div></section><button class="btn wide" id="find-time">새 레슨 예약하기 ↗</button></aside></div></section>
+<section id="reserve-view" hidden><section class="card"><div class="card-top"><h2>예약 가능한 시간 찾기</h2><span id="week-label"></span></div><div class="tools"><button id="previous">← 이전 주</button><button id="today">오늘</button><button id="next-week">다음 주 →</button><label>날짜 이동 <input type="date" id="jump"></label></div>
+<div id="pass-single"></div><label id="pass-picker">예약에 사용할 수강권 <select id="pass"></select></label><p id="pass-rule"></p>
+<label><input type="checkbox" id="show-unavailable"> 마감·예약 불가 시간도 보기</label><p class="note">초록색: 예약 가능 · 파란색: 내 예약 · 회색: 예약 불가</p>
+<div class="desktop-week" id="week-grid"></div>
+<p class="note">예약 즉시 확정됩니다. 취소·변경이 필요하면 코치에게 문의해 주세요.</p></section></section>
+<footer class="footer">RALLY · 테니스가 일상이 되는 시간</footer></main>
+<dialog id="confirm-dialog"><h2>이 시간에 예약할까요?</h2><p id="summary"></p><p id="confirm-error" role="alert"></p><div class="actions"><button class="btn outline" id="close">닫기</button><button class="btn" id="confirm">예약 확정</button></div></dialog>
+<dialog id="detail-dialog"><h2>내 레슨 상세</h2><p id="detail-text"></p><p>취소·변경은 코치에게 문의해 주세요.</p><button class="btn" id="detail-close">닫기</button></dialog>
+<style>
+[hidden]{display:none!important}header{gap:12px}.profile .btn{padding:8px}.compact{min-height:0;margin-bottom:24px;padding:28px}.compact h2{font-size:30px;margin:16px 0}.hero-content p{color:inherit}.student-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:24px}.student-layout .card{margin-bottom:20px}.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}.tools button,select,input[type=date]{border:1px solid var(--line);background:white;color:var(--green);padding:10px;border-radius:8px;font:inherit}.month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:20px 0}.month-grid>span{text-align:center;padding:8px}.month-cell{min-height:85px;border:1px solid var(--line);border-radius:10px;background:white;text-align:left;padding:10px;color:var(--green)}.month-cell small{display:block;margin-top:8px;color:#296484}.month-cell[aria-pressed=true]{outline:2px solid var(--green);background:#f0f5e9}.month-cell.today{border:2px solid #a2bc57}.reservation{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:white;padding:14px 0;color:var(--green);line-height:1.8}.pass-card{padding:12px 0;border-bottom:1px solid var(--line)}.pass-card strong{font-size:24px}.wide{width:100%}.dates{margin:22px 0 10px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.dates button{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 4px;color:var(--green)}.dates small{display:block;margin-top:8px}.dates button[aria-pressed=true]{background:var(--green);color:white}.desktop-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:start}.week-column{min-height:150px;padding:8px;background:#f7f8f2;border-radius:10px}.week-column h3{font-size:13px}.time-button{display:block;width:100%;margin:8px 0;padding:12px 4px;border:1px solid #b6cba5;background:#ecf4e5;color:var(--green);border-radius:8px;white-space:pre-line}.time-button.mine{background:#e3eff8;border-color:#9dbdd4;color:#295f85}.time-button:disabled{background:#eee;color:#777;border-color:#ddd}.mobile-times{display:none}.pass-picker{margin:15px 0}#pass-single{font-weight:bold;margin-top:20px}#success{padding:20px;background:#eaf2df;border-radius:14px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}#message{min-height:22px}#confirm-error{color:#a33333}details{margin-top:20px}summary{cursor:pointer;padding:10px 0}
+@media(max-width:850px){.student-layout{grid-template-columns:1fr}.desktop-week{display:grid;grid-template-columns:repeat(7,minmax(220px,80%));overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:12px}.week-column{scroll-snap-align:start}.month-cell{min-height:65px;padding:7px}.dates{gap:4px}.card{padding:18px}.compact{padding:22px}.compact h2{font-size:24px}.heading h1{font-size:25px}.card-top{flex-wrap:wrap}.profile{flex-wrap:wrap}.month-grid{gap:3px}.month-cell small{font-size:10px}#success{align-items:flex-start;flex-direction:column}}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+const $=id=>document.getElementById(id),session=window.RALLY_SESSION;
+const dayOf=value=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date(value));
+const today=()=>dayOf(Date.now()),add=(day,n)=>new Date(Date.parse(day+'T12:00:00+09:00')+n*86400000).toISOString().slice(0,10);
+const monday=day=>add(day,-((new Date(day+'T12:00:00Z').getUTCDay()+6)%7));
+const fmt=value=>new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+const time=value=>new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value));
+const el=(tag,text,cls)=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;};
+let selected=today(),week=selected,month=selected.slice(0,7),homeDay=selected,data=null,pending=null,request=0,saving=false,lastBooked=null;
+const weekCache=new Map(),monthCache=new Map(),inflight=new Map();let lastLoaded=0,dataWeek=null,dataMonth=null;
+const fresh=item=>item&&Date.now()-item.at<60000;
+$('name').textContent=session.name+' 님';
+async function api(url,body){const r=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});if(r.status===401){location.replace('/login.html');throw Error('다시 로그인해 주세요.');}const v=await r.json();if(!r.ok)throw Error(v.error||'요청을 처리하지 못했습니다.');return v;}
+function pass(){return data?.passes.find(p=>p.id===$('pass').value);}
+function own(e){return data.weekBookings.find(b=>b.entry_id===e.id&&b.status==='confirmed');}
+function reason(e,p){
+if(own(e))return '내 예약';if(!p)return '수강권 없음';if(e.type!=='lesson'||e.status!=='open')return '예약 불가';
+if(new Date(e.start)<=new Date())return '지난 시간';if(e.full)return '예약 마감';if(e.product_id!==p.product_id)return '다른 수강권';
+const day=dayOf(e.start),weekday=new Date(day+'T12:00:00Z').getUTCDay()||7;
+if(day<p.from||day>p.until)return '수강 기간 밖';if(!p.agreed_weekdays.includes(weekday))return '수강 요일 밖';
+if((new Date(e.end)-new Date(e.start))/60000!==p.agreed_duration_minutes)return '수업 길이 불일치';
+if(p.remaining-p.held<=0)return '횟수 소진';
+if(p.agreed_sessions_per_week&&data.weekBookings.filter(b=>b.pass_id===p.id&&monday(dayOf(b.start))===monday(day)).length>=p.agreed_sessions_per_week)return '주간 횟수 완료';
+if(data.weekBookings.some(b=>new Date(b.start)<new Date(e.end)&&new Date(b.end)>new Date(e.start)))return '내 일정과 겹침';
+return '';
+}
+function details(b){$('detail-text').textContent=fmt(b.start)+' ~ '+time(b.end)+' · '+(data.passes.find(p=>p.id===b.pass_id)?.name||'레슨')+' · '+status(b);$('detail-dialog').showModal();}
+function status(b){return b.status==='cancelled'?'취소':b.attendance==='present'?'출석 완료':b.attendance==='absent'?'불참':new Date(b.end)<new Date()?'지난 레슨 · 출석 미확인':'예약 확정';}
+function lessonButton(b){const button=el('button',fmt(b.start)+' · '+status(b),'reservation');button.onclick=()=>details(b);return button;}
+function renderHome(){
+$('month-label').textContent=month.replace('-','년 ')+'월';$('month-days').replaceChildren();
+for(const day of ['월','화','수','목','금','토','일'])$('month-days').append(el('span',day));
+const first=month+'-01',offset=(new Date(first+'T12:00:00Z').getUTCDay()+6)%7;for(let i=0;i<offset;i++)$('month-days').append(el('span',''));
+for(let d=first;d.slice(0,7)===month;d=add(d,1)){const date=d,items=data.calendar.filter(b=>dayOf(b.start)===date&&b.status==='confirmed'),button=el('button',String(+date.slice(8)),'month-cell'+(date===today()?' today':''));button.setAttribute('aria-pressed',String(date===homeDay));button.setAttribute('aria-label',date+', 예약 '+items.length+'건');if(items.length)button.append(el('small',items.length===1?time(items[0].start):items.length+'건'));button.onclick=()=>{homeDay=date;renderHome();};$('month-days').append(button);}
+$('selected-date').textContent=homeDay+' 일정';$('day-lessons').replaceChildren();
+for(const b of data.calendar.filter(b=>dayOf(b.start)===homeDay))$('day-lessons').append(lessonButton(b));
+if(!$('day-lessons').children.length)$('day-lessons').textContent='이 날짜에 예약된 레슨이 없습니다.';
+$('month-list').replaceChildren();for(const b of data.calendar)$('month-list').append(lessonButton(b));if(!data.calendar.length)$('month-list').textContent='이번 달에 예약 내역이 없습니다.';
+$('next-date').textContent=data.next?fmt(data.next.start):'예정된 레슨이 없어요';
+$('next-details').textContent=data.next?(data.passes.find(p=>p.id===data.next.pass_id)?.name||'레슨')+' · '+time(data.next.start)+'–'+time(data.next.end):'예약 화면에서 가능한 시간을 찾아보세요.';
+$('next-detail').hidden=!data.next;$('next-detail').onclick=()=>{if(data.next)details(data.next);};
+}
+function choose(e,p){pending={entry_id:e.id,pass_id:p.id,request_id:crypto.randomUUID()};lastBooked=dayOf(e.start);$('summary').textContent=fmt(e.start)+' · '+p.agreed_duration_minutes+'분 · '+e.coach+' 코치 / '+p.name+' / 예약 후 예약 가능 '+Math.max(0,p.remaining-p.held-1)+'회';$('confirm-error').textContent='';$('confirm-dialog').showModal();}
+function slotButton(e){const p=pass(),why=reason(e,p),b=el('button',time(e.start)+'–'+time(e.end)+'\n'+(why||'예약하기'),'time-button'+(why==='내 예약'?' mine':''));b.disabled=Boolean(why)&&why!=='내 예약';b.onclick=()=>why==='내 예약'?details(own(e)):choose(e,p);return b;}
+function visibleEntries(day){return data.entries.filter(e=>dayOf(e.start)===day&&(!$('show-unavailable').checked?['','내 예약'].includes(reason(e,pass())):true));}
+function renderReserve(){
+$('week-label').textContent=week+' ~ '+add(week,6);$('jump').value=selected;$('jump').min=today();$('previous').disabled=week<=today();$('week-grid').replaceChildren();
+const p=pass();$('pass-single').textContent=p?p.name+' · 예약 가능 '+Math.max(0,p.remaining-p.held)+'회':'이용 가능한 수강권이 없습니다.';
+$('pass-rule').textContent=p?p.agreed_weekdays.map(d=>['','월','화','수','목','금','토','일'][d]).join('·')+'요일 · '+p.agreed_duration_minutes+'분 · '+(p.agreed_sessions_per_week?'주 '+p.agreed_sessions_per_week+'회 · ':'')+p.from+' ~ '+p.until:'수강권 등록은 코치에게 문의해 주세요.';
+for(let i=0;i<7;i++){const day=add(week,i),label=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',weekday:'short',day:'numeric'}).format(new Date(day+'T12:00:00+09:00')),available=data.entries.filter(e=>dayOf(e.start)===day&&!reason(e,p)).length,mine=data.weekBookings.filter(b=>dayOf(b.start)===day).length;
+
+const column=el('div','','week-column');column.append(el('h3',label));if(available||mine)column.append(el('small',[available?'가능 '+available+'개':'',mine?'내 예약 '+mine+'건':''].filter(Boolean).join(' · ')));const entries=visibleEntries(day);for(const e of entries)column.append(slotButton(e));if(!entries.length)column.append(el('p','가능 시간 없음'));$('week-grid').append(column);}
+}
+function renderPasses(){const saved=$('pass').value;$('pass').replaceChildren();$('passes').replaceChildren();
+for(const p of data.passes){const o=el('option',p.name);o.value=p.id;$('pass').append(o);const card=el('div','','pass-card');card.append(el('h3',p.name),el('strong','예약 가능 '+Math.max(0,p.remaining-p.held)+'회'));const detail=el('details','');detail.append(el('summary','잔여 '+p.remaining+'회 · 예약 확보 '+p.held+'회'),el('p',p.from+' ~ '+p.until));card.append(detail);$('passes').append(card);}
+if(data.passes.some(p=>p.id===saved))$('pass').value=saved;$('pass-picker').hidden=data.passes.length<=1;if(!data.passes.length)$('passes').textContent='등록된 수강권이 없습니다.';}
+function clear(){for(const id of ['week-grid','month-days','day-lessons','month-list','passes'])$(id).replaceChildren();$('next-date').textContent='불러오는 중';$('next-details').textContent='';$('next-detail').hidden=true;$('pass-single').textContent='';$('pass-rule').textContent='';$('pass').disabled=true;}
+async function load(scope='all',force=false){
+if(typeof scope!=='string')scope='all';
+if(!data || (scope==='month'&&dataWeek!==week) || (scope==='week'&&dataMonth!==month))scope='all';
+const id=++request,w=week,m=month,key=scope+':'+w+':'+m;
+const wc=weekCache.get(w),mc=monthCache.get(m);
+const paint=()=>{renderPasses();renderHome();renderReserve();$('pass').disabled=false;$('home-view').inert=false;$('reserve-view').inert=false;};
+if(!force&&data&&((scope==='week'&&fresh(wc))||(scope==='month'&&fresh(mc)))){
+data={...data,...(scope==='week'?wc.value:mc.value)};if(scope==='week')dataWeek=w;else dataMonth=m;paint();$('message').textContent='';return true;
+}
+if(!data)clear();
+$('home-view').inert=true;$('reserve-view').inert=true;$('message').textContent='일정을 확인하는 중…';
+try{
+if(!inflight.has(key))inflight.set(key,api('/api/student-dashboard?week='+w+'&month='+m+'&scope='+scope).finally(()=>inflight.delete(key)));
+const result=await inflight.get(key),at=Date.now();
+if(scope!=='month'){const {calendar,next,...weekly}=result;weekCache.set(w,{value:weekly,at});}
+if(scope!=='week')monthCache.set(m,{value:{calendar:result.calendar},at});
+if(id!==request)return false;
+data={...data,...result};if(scope!=='month')dataWeek=w;if(scope!=='week')dataMonth=m;
+lastLoaded=at;paint();$('message').textContent='';return true;
+}catch(e){if(id!==request)return false;$('message').textContent=e.message+' 다시 조회하려면 새로고침을 눌러 주세요.';if(!data)$('next-date').textContent='일정을 확인할 수 없어요';return false;}
+}
+function tab(){const reserve=location.hash==='#booking';$('home-view').hidden=reserve;$('reserve-view').hidden=!reserve;$('home-tab').classList.toggle('active',!reserve);$('reserve-tab').classList.toggle('active',reserve);$('title').textContent=reserve?'레슨 예약':session.name+' 님의 레슨';$('subtitle').textContent=reserve?'내 수강권으로 예약 가능한 시간을 골라보세요.':'나의 테니스 일정을 한눈에 확인하세요.';}
+function navigate(reserve){location.hash=reserve?'#booking':'';tab();window.scrollTo({top:0,behavior:'smooth'});}
+$('find-time').onclick=$('reserve-tab').onclick=()=>navigate(true);$('home-tab').onclick=()=>navigate(false);window.addEventListener('hashchange',tab);
+function changeMonth(n){const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);month=d.toISOString().slice(0,7);homeDay=month+'-01';load('month');}
+$('month-prev').onclick=()=>changeMonth(-1);$('month-next').onclick=()=>changeMonth(1);$('month-today').onclick=()=>{month=today().slice(0,7);homeDay=today();load('month');};
+$('previous').onclick=()=>{week=add(week,-7)<today()?today():add(week,-7);selected=week;load('week');};$('next-week').onclick=()=>{week=add(week,7);selected=week;load('week');};$('today').onclick=()=>{selected=today();week=selected;load('week');};
+$('jump').onchange=()=>{if(!$('jump').value)return;selected=$('jump').value<today()?today():$('jump').value;week=selected;load('week');};
+$('pass').onchange=$('show-unavailable').onchange=()=>{if(data)renderReserve();};$('reload').onclick=()=>load('all',true);
+$('close').onclick=()=>{if(!saving)$('confirm-dialog').close();};$('confirm-dialog').addEventListener('cancel',e=>{if(saving)e.preventDefault();});
+$('detail-close').onclick=()=>$('detail-dialog').close();
+$('confirm').onclick=async()=>{if(!pending||saving)return;saving=true;$('confirm').disabled=true;$('close').disabled=true;
+try{await api('/api/booking-action',{action:'reserve',payload:pending});pending=null;$('confirm-dialog').close();homeDay=lastBooked;month=lastBooked.slice(0,7);$('success').hidden=false;$('success-text').textContent=lastBooked+' 레슨 예약이 확정되었습니다.';weekCache.clear();monthCache.clear();const refreshed=await load('all',true);if(!refreshed)$('message').textContent='예약은 확정되었지만 일정 갱신에 실패했습니다. 다시 예약하지 말고 새로고침해 주세요.';}
+catch(e){$('confirm-error').textContent=e.message;}finally{saving=false;$('confirm').disabled=false;$('close').disabled=false;}};
+$('view-booking').onclick=()=>navigate(false);
+$('logout').onclick=async()=>{try{await api('/auth/logout',{});location.replace('/login.html');}catch(e){$('message').textContent=e.message;}};
+const refresh=()=>{if(!document.hidden&&Date.now()-lastLoaded>60000&&!$('confirm-dialog').open&&!$('detail-dialog').open)load('all',true);};document.addEventListener('visibilitychange',refresh);window.addEventListener('pageshow',e=>{if(e.persisted)refresh();});tab();load();
+});
+</script></body></html>
