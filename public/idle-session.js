@@ -6,6 +6,19 @@
   let offset = Date.parse(session.serverNow) - Date.now();
   let lastSent = 0, lastInput = 0, trailing, sending = false, leaving = false, checking = false;
   const now = () => Date.now() + offset;
+  const badge = document.createElement('span');
+  badge.id = 'session-remaining';
+  badge.setAttribute('role', 'timer');
+  badge.setAttribute('aria-live', 'off');
+  badge.title = '아무 활동이 없으면 표시된 시간이 지난 뒤 로그아웃됩니다.';
+  badge.style.cssText = 'position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:30;padding:7px 11px;border:1px solid #dce5d7;border-radius:20px;background:#f7faf3;color:#49623f;font:12px/1.4 Arial,"Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;box-shadow:0 2px 8px #0000000a;pointer-events:none';
+  document.body.append(badge);
+  function updateBadge() {
+    const seconds = Math.max(0, Math.ceil((expires - now()) / 1000));
+    badge.textContent = '로그인 유지 ' + String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+    badge.style.color = seconds <= 60 ? '#a63232' : '#49623f';
+    badge.style.background = seconds <= 60 ? '#fff1ef' : '#f7faf3';
+  }
   const dialog = document.createElement('dialog');
   dialog.setAttribute('aria-labelledby', 'idle-title');
   dialog.style.cssText = 'border:0;border-radius:16px;padding:28px;max-width:420px;width:90%;color:#214e3b';
@@ -31,6 +44,7 @@
     if (result.sessionId !== session.idleKey) { leave('manual', false); return; }
     expires = Date.parse(result.expiresAt);
     offset = Date.parse(result.serverNow) - Date.now();
+    updateBadge();
     if (broadcast) publish(result);
     if (expires - now() > 60000 && dialog.open) dialog.close();
     error.textContent = '';
@@ -72,6 +86,7 @@
   dialog.addEventListener('cancel', event => event.preventDefault());
   function tick() {
     if (leaving) return;
+    updateBadge();
     const left = expires - now();
     if (left <= 0) { check(); return; }
     if (left <= 60000) {

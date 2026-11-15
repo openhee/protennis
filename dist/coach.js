@@ -162,7 +162,6 @@ async function refreshLiveCalendar(force=false){
   if(request!==liveRequest)return;
   liveLastLoaded=Date.now();liveOwn=!payload.actor_id||payload.actor_id===payload.selected_coach_id;
   if(payload.coaches){const select=$('#coach-select');select.replaceChildren();for(const c of payload.coaches){const option=element('option','',c.name+(c.id===payload.actor_id?' (내 일정)':''));option.value=c.id;select.append(option);}select.value=payload.selected_coach_id;select.disabled=false;}
-  const addButton=document.getElementById('open-range-button');if(addButton)addButton.hidden=!liveOwn;
   $('#calendar-view').inert=false;$('#timetable').inert=false;
   rangeProducts=payload.products||[];
   const items=liveItems(payload),root=$('#calendar-view');root.replaceChildren();
@@ -173,7 +172,7 @@ async function refreshLiveCalendar(force=false){
   for(const time of times){const row=element('tr');row.append(element('td','',time));DAYS.forEach((d,i)=>{const cell=element('td'),entries=items.filter(e=>e.date===dateAt(i)&&e.time===time);entries.forEach(e=>cell.append(buttonFor(e)));if(!entries.length&&liveOwn){const b=element('button','slot unknown','+ 시간 등록');b.type='button';b.setAttribute('aria-label',dateAt(i)+' '+time+' 시간 등록 화면 열기');b.dataset.day=dateAt(i);b.dataset.time=time;b.onclick=()=>openRange(dateAt(i),time,time);b.onpointerdown=event=>{if(event.button!==0||event.pointerType==='touch')return;event.preventDefault();b.focus();dragRange={date:b.dataset.day,start:time,end:time};paintRange();};b.onpointerenter=()=>{if(dragRange&&dragRange.date===b.dataset.day){dragRange.end=time;paintRange();}};cell.append(b);}row.append(cell);});body.append(row);}table.append(body);
   const bookings=payload.bookings.filter(b=>b.status==='confirmed');
   for(const [id,count] of [['total',bookings.length],['attended',bookings.filter(b=>b.attendance==='present').length],['absent',bookings.filter(b=>['absent','no_show'].includes(b.attendance)).length],['open',items.filter(e=>e.type==='lesson'&&e.status==='open'&&!e.full&&Date.parse(e.start)>Date.now()).length]])$('#stat-'+id).replaceChildren(document.createTextNode(String(count)),element('small','',id==='open'?'칸':'건'));
-  $('#review-count').textContent='실제 DB 일정 · '+items.length+'건';$('#view-description').textContent=liveOwn?'한국 시간 · 내 일정':'공유 일정 · 조회 전용';
+  $('#review-count').textContent='';$('#view-description').textContent=liveOwn?'한국 시간 · 내 일정':'공유 일정 · 조회 전용';
   $('#save-status').textContent='갱신 완료 · '+new Date().toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'});
  }catch(error){if(request!==liveRequest)return;$('#calendar-view').replaceChildren(element('p','calendar-empty','일정을 불러오지 못했습니다. 주간 또는 코치를 다시 선택해 주세요.'));$('#save-status').textContent='조회 실패 · 재시도 필요';}
 }
@@ -182,7 +181,8 @@ if(liveMode){
  installRangeEditor();
  $('#reset').hidden=true;
  document.querySelector('.source-note p').textContent='같은 지점 코치의 일정을 조회할 수 있습니다. 일정 등록은 본인 일정에서 가능합니다.';
- document.querySelector('.sidebar-bottom').textContent='실제 DB 연결 · 코치 공유 일정';
+ document.querySelector('.sidebar-bottom').textContent='';
+ document.querySelector('.sidebar-bottom').hidden=true;
  document.querySelector('.coupon-section').hidden=true;document.querySelector('.bottom-notes').hidden=true;
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-liveLastLoaded>60000)refreshLiveCalendar();});
  window.addEventListener('pageshow',event=>{if(event.persisted&&Date.now()-liveLastLoaded>60000)refreshLiveCalendar();});
@@ -231,7 +231,6 @@ function installRangeEditor(){
    rangeDialog.close();liveCache.clear();await refreshLiveCalendar(true);notify(action==='bulk-open'?result.count+'개의 레슨 시간을 열었습니다.':'예약 불가 시간을 등록했습니다.');
   }catch(error){document.getElementById('range-error').textContent=error.message;}finally{saveButton.disabled=false;}
  };
- const add=element('button','button','예약 시간 열기');add.type='button';add.id='open-range-button';add.onclick=()=>openRange(weekStart,'18:00','18:40');document.querySelector('.heading').append(add);
  const hint=element('p','range-hint','상세 시간표에서 같은 요일의 빈 시간을 드래그하면 20분씩 한 번에 열 수 있어요. 휴대폰에서는 빈 칸을 누른 뒤 종료 시간을 선택하세요.');
  document.querySelector('.toolbar').after(hint);
  window.addEventListener('pointerup',()=>{if(!dragRange)return;const range=dragRange;dragRange=null;paintRange();openRange(range.date,range.start,range.end);});

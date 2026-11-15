@@ -52,7 +52,7 @@ export async function handle(request, env = process.env, transport = fetch) {
   return auth ? auth.finish(result) : result;
   async function route() {
     const path = new URL(request.url).pathname;
-    if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/idle-session.js', '/date.js'].includes(path) && request.method === 'GET') {
+    if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/idle-session.js', '/date.js', '/autumn.js', '/christmas-tree.js', '/animation-toggle.js'].includes(path) && request.method === 'GET') {
       const file = path === '/login' ? 'login.html' : path.slice(1);
       return response(await readFile(join(process.cwd(), 'public', file), 'utf8'), 200, { 'Content-Type': types[file.split('.').pop()] });
     }
