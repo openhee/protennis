@@ -794,7 +794,7 @@ $('confirm').onclick=async()=>{if(!pending||saving)return;saving=true;$('confirm
 try{await api('/api/booking-action',{action:'reserve',payload:pending});pending=null;$('confirm-dialog').close();homeDay=lastBooked;month=lastBooked.slice(0,7);$('success').hidden=false;$('success-text').textContent=lastBooked+' 레슨 예약이 확정되었습니다.';weekCache.clear();monthCache.clear();const refreshed=await load('all',true);if(!refreshed)$('message').textContent='예약은 확정되었지만 일정 갱신에 실패했습니다. 다시 예약하지 말고 새로고침해 주세요.';}
 catch(e){$('confirm-error').textContent=e.message;}finally{saving=false;$('confirm').disabled=false;$('close').disabled=false;}};
 $('view-booking').onclick=()=>navigate(false);
-$('logout').onclick=async()=>{try{await api('/auth/logout',{});location.replace('/login.html');}catch(e){$('message').textContent=e.message;}};
+$('logout').onclick=async()=>{if(window.RALLY_LOGOUT)return window.RALLY_LOGOUT();try{await api('/auth/logout',{});location.replace('/login.html');}catch(e){$('message').textContent=e.message;}};
 const refresh=()=>{if(!document.hidden&&Date.now()-lastLoaded>60000&&!$('confirm-dialog').open&&!$('detail-dialog').open)load('all',true);};document.addEventListener('visibilitychange',refresh);window.addEventListener('pageshow',e=>{if(e.persisted)refresh();});tab();load();
 });
 </script></body></html>

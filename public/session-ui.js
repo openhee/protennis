@@ -1,6 +1,6 @@
 (async()=>{
  if(location.pathname==='/booking.html'||location.pathname==='/index.html')return;
- async function logout(){try{const response=await fetch('/auth/logout',{method:'POST'});if(!response.ok)throw Error();location.replace('/login.html')}catch{alert('로그아웃하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.')}}
+ async function logout(){if(window.RALLY_LOGOUT)return window.RALLY_LOGOUT();try{const response=await fetch('/auth/logout',{method:'POST'});if(!response.ok)throw Error();location.replace('/login.html')}catch{alert('로그아웃하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.')}}
  async function check(){const response=await fetch('/auth/session',{cache:'no-store'});if(!response.ok){location.replace('/login.html');return null}return response.json()}
  // Protected HTML contains the session that the server already verified.
  // Keep the endpoint fallback for older/cached pages during deployment.

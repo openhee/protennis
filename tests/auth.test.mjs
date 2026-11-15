@@ -43,6 +43,12 @@ function backend(options = {}) {
     if (u.pathname.startsWith('/rest/v1/')) {
       assert.match(headers.get('authorization') || '', /^Bearer ey/);
       if (state.failDB) return reply({ message: 'database unavailable' }, 503);
+      if (u.pathname === '/rest/v1/rpc/session_activity') {
+        const {touch}=JSON.parse(options.body);
+        if(state.idleExpired)return reply(null);
+        if(touch)state.touches=(state.touches||0)+1;
+        return reply({session_id:'test-session',expires_at:new Date(Date.now()+1800000).toISOString(),server_now:new Date().toISOString()});
+      }
       if (u.pathname === '/rest/v1/rpc/booking_dashboard') return reply({ passes: [], entries: [], bookings: [], products: [] });
       if (u.pathname === '/rest/v1/rpc/booking_action') return reply({ id: 'booking-id' });
       if (u.pathname === '/rest/v1/rpc/open_lesson_range') return reply({ count: 3 });
@@ -175,6 +181,21 @@ test('bad credentials, cross-origin mutations and malformed bodies fail', async 
   for (const path of ['/auth/login', '/auth/logout']) assert.equal((await b.run(path, { method: 'POST', origin: 'https://evil.test', body: {} })).status, 403);
   assert.equal((await b.run('/auth/login', { method: 'POST', body: null })).status, 400);
   assert.equal((await b.run('/auth/login', { method: 'POST', body: { oversized: 'x'.repeat(5000) } })).status, 413);
+});
+test('idle expiration blocks HTML, APIs and activity even with a valid JWT',async()=>{
+ const b=backend(),{cookie}=await login(b);
+ const touched=b.state.touches;
+ await b.run('/auth/session',{cookie});await b.run('/api/booking-dashboard?day=2026-11-16',{cookie});
+ assert.equal(b.state.touches,touched);
+ assert.equal((await b.run('/auth/activity',{cookie,method:'POST'})).status,200);
+ assert.equal(b.state.touches,touched+1);
+ assert.equal((await b.run('/auth/activity',{cookie,method:'POST',origin:'https://evil.test'})).status,403);
+ b.state.idleExpired=true;
+ const denied=await b.run('/api/booking-action',{cookie,method:'POST',body:{action:'open',payload:{}}});
+ assert.equal(denied.status,401);assert.equal((await denied.json()).code,'IDLE_TIMEOUT');
+ assert.ok(denied.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
+ assert.equal((await b.run('/auth/activity',{cookie,method:'POST'})).status,401);
+ assert.equal((await b.run('/coach.html',{cookie})).headers.get('location'),'/login.html?reason=idle');
 });
 test('repeated failed attempts are rate limited', async () => {
   const b = backend(); for (let i = 0; i < 10; i++) assert.equal((await b.run('/auth/login', { method: 'POST', body: { email: 'ratelimit@example.test', password: 'wrong' } })).status, 401);

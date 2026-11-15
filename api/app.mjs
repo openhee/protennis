@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createAuthContext, AuthUnavailable, homeFor } from '../lib/supabase-auth.mjs';
+import { createAuthContext, AuthUnavailable, SessionExpired, homeFor } from '../lib/supabase-auth.mjs';
 const attempts = new Map();
 const types = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8' };
 // These files contain presentation code and synthetic demo data only. Serving
@@ -32,10 +32,11 @@ async function serve(file, account) {
       role: account.role,
       home: homeFor(account),
       storageId: issueStorageId(account)
+      ,idleExpiresAt: account.idleExpiresAt, idleKey: account.idleKey, serverNow: account.serverNow
     }).replaceAll('<', '\\u003c');
     // Reuse the authorization result that was already needed to serve this
     // page. Client scripts no longer call /auth/session again after navigation.
-    body = body.replace('</body>', `<script>window.RALLY_SESSION=Object.freeze(${session})</script><script src="/session-ui.js" defer></script></body>`);
+    body = body.replace('</body>', `<script>window.RALLY_SESSION=Object.freeze(${session})</script><script src="/idle-session.js" defer></script><script src="/session-ui.js" defer></script></body>`);
   }
   return response(body, 200, { 'Content-Type': types[file.split('.').pop()] });
 }
@@ -43,11 +44,15 @@ export async function handle(request, env = process.env, transport = fetch) {
   let auth;
   let result;
   try { result = await route(); }
-  catch (error) { result = json({ error: error instanceof AuthUnavailable ? '로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.' : '요청 처리 중 문제가 발생했습니다.' }, error instanceof AuthUnavailable ? 503 : 500); }
+  catch (error) {
+    if (error instanceof SessionExpired) result = new URL(request.url).pathname.startsWith('/api/') || new URL(request.url).pathname.startsWith('/auth/')
+      ? json({error:'30분 동안 활동이 없어 로그아웃되었습니다.',code:'IDLE_TIMEOUT'},401) : redirect('/login.html?reason=idle');
+    else result = json({ error: error instanceof AuthUnavailable ? '로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.' : '요청 처리 중 문제가 발생했습니다.' }, error instanceof AuthUnavailable ? 503 : 500);
+  }
   return auth ? auth.finish(result) : result;
   async function route() {
     const path = new URL(request.url).pathname;
-    if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/date.js'].includes(path) && request.method === 'GET') {
+    if (['/login', '/login.html', '/login.js', '/login.css', '/session-ui.js', '/idle-session.js', '/date.js'].includes(path) && request.method === 'GET') {
       const file = path === '/login' ? 'login.html' : path.slice(1);
       return response(await readFile(join(process.cwd(), 'public', file), 'utf8'), 200, { 'Content-Type': types[file.split('.').pop()] });
     }
@@ -91,7 +96,10 @@ export async function handle(request, env = process.env, transport = fetch) {
       attempts.delete(email);
       return json({ redirect: homeFor(user) });
     }
-    const account = await auth.account();
+    const account = await auth.account(path === '/auth/activity' && request.method === 'POST');
+    if ((path === '/auth/activity' && request.method === 'POST') || (path === '/auth/idle' && request.method === 'GET')) {
+      return account ? json({expiresAt:account.idleExpiresAt,sessionId:account.idleKey,serverNow:account.serverNow}) : json({error:'로그인이 필요합니다.'},401);
+    }
     if (path === '/api/coach-calendar' && request.method === 'GET') {
       if (!account) return json({error:'로그인이 필요합니다.'},401);
       if (account.role !== 'coach') return json({error:'코치 권한이 필요합니다.'},403);

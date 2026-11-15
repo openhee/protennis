@@ -1,6 +1,7 @@
 const form = document.querySelector("#login-form");
 const error = document.querySelector("#error");
 const button = document.querySelector("#submit");
+if(new URLSearchParams(location.search).get('reason')==='idle')error.textContent='30분 동안 활동이 없어 로그아웃되었습니다. 다시 로그인해 주세요.';
 document.querySelector("#toggle-password").onclick = () => {
   const input = document.querySelector("#password");
   const show = input.type === "password";
